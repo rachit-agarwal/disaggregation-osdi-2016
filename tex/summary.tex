@@ -1,0 +1,582 @@
+\section{Disaggregated Datacenters}
+\label{sec:summary}
+
+\begin{table}
+  \centering
+  \small
+  \begin{tabular}{l|c|c}
+		\textbf{Communication} & \textbf{Latency (ns)} & \textbf{Bandwidth (Gbps)}\\\hline
+	\hline
+    CPU -- CPU & $10$ & $500$\\\hline
+    CPU -- Memory & $20$ & $500$\\\hline
+ %   CPU -- $40$G NIC & $10^3$ & $40$\\\hline
+    CPU -- Disk (SSD) & $10^4$ & $5$\\\hline
+    CPU -- Disk (HDD) & $10^6$ & $1$\\\hline
+    \hline
+  \end{tabular}
+  \vspace{0.1in}
+  \caption{\small{Typical latency and peak bandwidth requirements within a traditional server. Numbers vary between hardware.}}
+  \label{tab:tech}
+\end{table}
+
+The high-level idea behind a disaggregated datacenter is illustrated in Figure~\ref{fig:dc}.
+A \dis comprises standalone hardware ``blades'' for each resource type, %including CPUs, memory, storage, and network interfaces as well as specialized components (GPUs, various ASIC accelerators, etc.). Those resource blades are
+interconnected by a network fabric.
+In this section, we present our assumptions regarding the hardware (\S\ref{ssec:hardware}) and system (\S\ref{ssec:system}) architecture in a disaggregated datacenter. Our assumptions are informed by early prototypes of \dis hardware and hence we start with a brief review of existing \dis hardware prototypes (\S\ref{ssec:prototype}).
+\cut{ 
+In this section, we discuss existing disag
+gregated hardware prototypes (\S\ref{ssec:prototype}), and use the commonalities across these prototypes to motivate the set of assumptions made in our study (\S\ref{ssec:hardware}, \S\ref{ssec:system}).
+} 
+We close the section by summarizing the key open design choices that remain after our assumptions (\S\ref{ssec:knobs}); we treat these as design `knobs' in our evaluation.
+%and that we explore in the remainder of this paper.
+\cut{ 
+that allow us to study the impact of several of the above design aspects on application-level performance in disaggregated datacenters 
+} 
+
+% \rc{This is not true for rack-scale disaggregation $\to$ The high-level idea behind a disaggregated datacenter is illustrated in Figure~\ref{fig:dc}.
+% A \dis comprises standalone hardware “blades” for each resource type, %including CPUs, memory, storage, and network interfaces as well as specialized components (GPUs, various ASIC accelerators, etc.). Those resource blades are
+% interconnected by a unified network fabric. Understanding the nature of this network fabric is our focus in this paper.}
+% However, before delving into network designs, we outline our assumptions regarding the hardware (\S\ref{ssec:hardware}) and system (\S\ref{ssec:system}) architecture in \dis. 
+
+%\vspace{-0.05in}
+\subsection{Background: \dis prototypes}
+%\vspace{-0.05in}
+\label{ssec:prototype}
+Multiple prototypes of disaggregated hardware already exist --- Intel RSA~\cite{rsa}, HP ``the machine''~\cite{hptm}, Facebook's disaggregated rack~\cite{fdr}, Huawei's DC3.0~\cite{huawei}, and SeaMicro~\cite{seamicro}, as well as research prototypes like Firebox~\cite{firebox}, soNUMA~\cite{sonuma}, and memory blades~\cite{ddcHwDesign1}. 
+Many of these systems are proprietary and/or in the early stages of development; nonetheless, publicly available information reveals that these prototypes typically share the following high-level design choices: 
+%remain fuzzy, they share several commonalities:
+%\begin{enumerate}
+	% \item {\bf Disaggregation at the rack-scale}, that is, a single rack contains all the resources needed for computing tasks and the applications running atop use resources within a single rack.
+	
+\paragraphb{(1) Partial CPU-memory disaggregation} 
+In general, disaggregation suggests that each blade is comprised of a particular resource with a direct interface to the network fabric (Fig.~\ref{fig:dc}). One exception to this strict decoupling are CPU blades: each CPU blade retains some amount of \emph{local} memory that acts as a cache for remote  memory.\footnote{We use ``remote memory'' to refer to the memory located on a standalone memory blade.} Unlike remote memory which can be allocated to any core in the disaggregated system, local memory is dedicated to the cores co-located on the blade.  Thus, CPU-memory disaggregation can be viewed as expanding the memory hierarchy to include a remote level, which is shared by all CPU blades. This architectural choice is reported in prior work~\cite{firebox, ddcHwDesign1, ddcHwDesign2, firebox, huawei}.
+	
+	
+%	with each individual CPU blade retaining a small amount of ``local cache'' shared by the cores on the blade. This local cache is not shared by cores across blades.
+	
+
+\paragraphb{(2) Cache coherence domain is limited to a single compute blade} As articulated by others~\cite{firebox,hptm,huawei}, this has the important implication that 
+%cache coherence domains are constrained to a single physical blade and hence 
+CPU-to-CPU cache coherence traffic does not hit the network fabric.
+This assumption is necessary because an external network fabric is unlikely to support the latency and bandwidth requirements for inter-CPU cache coherence (Table~\ref{tab:tech}).
+
+\cut{
+{\bf Virtual Machine abstraction} to aggregate slices of resources required for computing tasks.
+} 
+
+
+\paragraphb{(3) Resource Virtualization}
+Each resource blade must support virtualization of its resources; this is necessary for resources to be logically aggregated into higher-level abstractions such as VMs or containers.
+Virtualization of IO resources is widely available even today: many IO device controllers now support virtualization via PCIe, SR-IOV, or MR-IOV features~\cite{sriov} and the same can be leveraged to virtualize IO resources in \dis.
+The disaggregated memory blade prototyped by Lim \etal~\cite{ddcHwDesign1} includes a controller ASIC on each blade that implements address translation between a remote CPU's view of its address space and the addressing used internally within the blade. Similar designs are assumed by other research efforts. We note that while the implementation of such blades may require some additional new hardware, it requires no change to existing components such as CPUs, memory modules, or storage devices themselves.	
+	
+\paragraphb{(4) Rack-scale disaggregation} Existing prototypes limit the scope of disaggregation to a very small number of racks. For example,~\cite{firebox} envisions a single Firebox system as spanning approximately three racks and assumes that the \emph{logical} aggregation and allocation of resources is similarly scoped; i.e., the resources allocated to a higher-level abstraction such as a VM or a container are selected from a single firebox. In contrast, in a hypothetical datacenter-scale disaggregated system, resources assigned to (for example) a single VM could be selected from anywhere in the datacenter. Similarly, the scope of disaggregation in Intel's RSA is a single rack~\cite{rsa}. 
+
+\paragraphb{(5) Specialized network designs} 
+Corresponding to their assumed scope of disaggregation, existing prototypes assume a different network architecture for within the rack(s) that form a unit of disaggregation vs. between such racks. To our knowledge, all existing \dis prototypes use specialized -- even proprietary~\cite{seamicro,huawei,rsa} -- network technologies and protocols within a disaggregated rack(s). For example, SeaMicro uses a proprietary Torus-based topology and routing protocol within its disaggregated system; Huawei propose a PCIe-based fabric~\cite{huawei1}; Firebox assumes an intra-Firebox network of 1Tbps Silicon photonics links interconnected by high-radix switches~\cite{firebox,vladimir}; and Intel's RSA likewise explores the use of Silicon photonics links and switches. 
+
+
+\cut{
+	{\bf Specialized Intra-rack network fabric} that use non-commodity components (\eg, Silicon photonics or PCIe links) and protocols, with a clear separation from inter-rack network fabric that comprises of commodity components and legacy protocols.
+}
+%\end{enumerate}
+
+
+%\vspace{-0.05in}
+\subsection{Assumptions: Hardware Architecture}
+%\vspace{-0.05in}
+\label{ssec:hardware}
+
+\cut{
+We start by outlining the hardware design we assume for \dis; our assumptions follow previous studies and existing disaggregated prototypes~\cite{ddcHwDesign1, ddcHwDesign2, ddcHwDesign3, rsa, hptm, fdr, sonuma, firebox}. We refer the reader to~\cite{ddcHwDesign1, ddcHwDesign2, ddcHwDesign3} for detailed hardware designs.% for disaggregated blades. 
+}
+
+In our study, we both borrow from  as well as critically explore the design choices made by existing hardware prototypes. Specifically, from our discussion in \S\ref{ssec:prototype}, we adopt the following assumptions: (1) partial CPU-memory disaggregation (i.e., each CPU blade retains some amount of local memory),  (2) cache coherence limited to a single CPU blade, and (3) resource virtualization. 
+While we assume that partial CPU-memory disaggregation will be the norm, we go a step further and evaluate how the amount of local memory impacts \emph{network} requirements in terms of network bandwidth and latency, and transport-layer flow completion times.
+
+
+
+%, we borrow several commonalities of these prototypes (\#1, \#2, \#3) and %discuss these in more depth in the remainder of this section. However, our 
+
+%\sr{todo:reconcile with what intro says}
+Rather than simply accepting the last two design choices --- rack-scale disaggregation and specialized network designs --- made by existing prototypes (\S\ref{ssec:prototype}), we critically explore when and why these choices are necessary. Our rationale in this is twofold. 
+First, these are both choices that appear to be motivated not by fundamental constraints around disaggregating memory or CPU at the hardware level, but rather by the assumption that existing networking solutions cannot meet the (bandwidth/latency) requirements that disaggregation imposes on the network. However, to our knowledge, there has been no systematic evaluation showing this to be the case; hence, we wanted to develop quantifiable arguments that either confirm or refute the need for these choices. 
+
+Second, these choices are likely to complicate or delay the deployment of \dis. The use of a different network architecture within vs. between disaggregated islands leads to the complexity of a two-tier heterogeneous network architecture with different protocols, configuration APIs, etc., for each; e.g., in the context of their Firebox system, the authors envisage the use of special gateway devices that translate between their custom intra-Firebox protocols and TCP/IP that is used between Firebox systems; Huawei's DC3.0 makes similar assumptions. Likewise, many of the specialized technologies these systems use (e.g., Si-photonics~\cite{vladimir-nature}) are still far from mainstream. 
+Hence, once again, rather than assume change is necessary, we wanted to rigorously evaluate the possibility  of maintaining a uniform ``flat'' network architecture based on existing commodity components as advocated in prior work~\cite{el-fares,vl2,greenberg-costs}. 
+
+
+\cut{ 
+study complements these prototypes by critically exploring several design aspects (\#1, \#4): (i) the impact of CPU-memory disaggregation on application-level performance; (ii) the bandwidth and latency requirements for maintaining application-level performance compared to traditional server-centric architectures; and in particular, the need for specialized network interconnects; and (iii) the possibility of designing a ``flat'' network architecture for resource disaggregated datacenters with disaggregation at the datacenter scale. 
+
+
+And as we shall see, our study shows that several assumptions implicit in the design of these early prototypes may not be necessary and that, for current workloads, resource disaggregation can be decoupled with the development of emerging network technologies.
+
+}
+
+
+
+
+
+
+\cut{
+\paragraphb{Standalone per-resource blades}
+Each blade is comprised of a particular resource with a direct interface to the network fabric. One exception to this strict decoupling are compute blades, that retain some amount of \emph{local} memory that acts as a cache for remote memory~\cite{ddcHwDesign1, ddcHwDesign2} and is dedicated to CPUs co-located on the blade. Thus, CPU-memory disaggregation can be viewed as expanding the memory hierarchy to include a remote level, which is shared by all CPU blades. 
+}
+%is necessary to ensure reasonable performance given the increased latency to access remote memory.
+%Since memory access from CPUs must run at very high speed (see Table~\ref{tab:tech}), each compute blade is assumed to retain . 
+%While remote memory may be allocated to any CPU in the datacenter, local memory is dedicated to its co-located CPU. 
+
+\cut{
+\paragraphb{Cache coherence domain is limited to a single compute blade}
+As we elaborate on below, we assume that the abstraction of a Virtual Machine (VM) is retained in \dis and that, similar to today, each VM is limited to a single compute blade (which may house one or more CPU `sockets'). This has the important implication that cache coherence domains are constrained to 
+a single physical blade and hence CPU-to-CPU cache coherence traffic does not hit the network fabric.
+This assumption is necessary because an external network fabric is unlikely to support the latency and bandwidth requirements for inter-CPU cache coherence (Table~\ref{tab:tech}).
+}
+
+\cut{
+\paragraphb{Each CPU blade hosts a small local cache}
+As proposed in previous work~\cite{ddcHwDesign1}, we assume that each CPU blade retains a small amount of local memory (rather than completely disaggregating the memory) that acts as a cache for remote memory. While remote memory may be allocated to any CPU in the datacenter, local memory is dedicated to its co-located CPUs. \rqc{As we shall see, the assumption of local memory is necessary to ensure reasonable performance given the increased latency to access remote memory.}
+}
+
+
+
+
+%{\footnote{\sr{WHY?\rc{We should comment on metadata management here}}}}. 
+
+%
+
+%
+
+\subsection{Assumptions: System Architecture}
+%\vspace{-0.05in}
+\label{ssec:system}
+%We now outline our assumptions regarding the system architecture in \dis. 
+In contrast to our assumptions regarding hardware which we based on existing  prototypes, we have less to guide us on the systems front. We thus make the following assumptions, which we believe are reasonable: 
+
+
+\paragraphb{System abstractions for \emph{logical} resource aggregations} 
+In a \dis, we will need system abstractions that represent a logical aggregation of resources, in terms of which we implement resource allocation and scheduling. 
+One such abstraction in existing datacenters is a VM: 
+operators provision VMs to aggregate slices of hardware resources within a server, and schedulers place jobs across VMs. 
+While not strictly necessary, we note that the VM model can still be useful in \dis.\footnote{In particular, continuing with the abstraction of a VM would allow existing software infrastructure --- i.e., hypervisors, operating systems, datacenter middleware, and applications --- to be reused with little or no modification.} 
+For convenience, in this paper we assume that computational resources are still aggregated to form VMs (or VM-like constructs), although now the resources assigned to a VM come from distributed hardware blades. Given a VM (or VM-like) abstraction, we assign resources to VMs differently based on the \emph{scope} of disaggregation that we assume: for rack-scale disaggregation, a VM is assigned resources from within a single rack while, for datacenter-scale disaggregation, a VM is assigned resources from anywhere in the datacenter.
+
+%
+\begin{table*}
+  \centering
+  \small
+  \begin{tabular}{c|c|c|c}
+		\textbf{Application Domain} & \textbf{Application} & \textbf{System} & \textbf{Dataset} \\\hline \hline
+		
+    Off-disk Batch & WordCount & Hadoop & Wikipedia edit history~\cite{wikipedia}\\
+     Off-disk Batch & Sort & Hadoop & Sort benchmark generator\\
+     Graph Processing & Collaborative Filtering & GraphLab & NetFlix movie rating data~\cite{netflix}\\
+    Point Queries & Key-value store & Memcached & YCSB Benchmark B\\\hline
+     \hline
+     
+    In-memory Batch & WordCount & Spark & Wikipedia edit history~\cite{wikipedia}\\
+     In-memory Batch & Sort & Spark & Sort benchmark generator\\
+     Parallel Dataflow & Pagerank & Timely Dataflow & Friendster Social Network~\cite{friendster}\\
+     In-memory Batch & SQL & Spark SQL & Big Data Benchmark~\cite{bdb}\\\hline
+
+    \hline
+  \end{tabular}
+  \vspace{0.1in}
+  \caption{\small{Applications, workloads, systems and datasets used in our study.}}
+  \label{tab:workloads}
+\end{table*}
+%
+\paragraphb{Hardware organization} 
+%\rc{Remove since this is not necessarily true for the case of datacenter-scale disaggregation? $\to$}
+We assume that resources are organized in racks as in today's datacenters. 
+We assume a `mixed' organization in which each rack hosts a mix of different types of resource blades, as opposed to a `segregated' organization in which a rack is populated with a single type of resource (e.g., all memory blades). The rationale for a mixed organization is twofold. 
+First, it leads to a more uniform communication pattern which should simplify network design. 
+Second, a mixed organization permits optimizations that aim to localize communication; e.g., co-locating a VM within a rack, which would not be possible with a segregated organization. 
+%\sr{clear?}\sh{to me yes, but should be in \S\ref{ssec:hardware}?}
+%\rqc{(in some proportion that isn't important)} \rc{Shouldn't this go to the previous subsection?}
+
+%The scheduler allocates resources by assigning resource blades (or a part of), configuring the resultant resource and address space assignments at the selected blades, and configuring the network that interconnects these blades. Depending of the scale of disaggregation, each rack may contain different types of resource blades and the scheduler may optimize for locality when it allocates resources to a job. The best layout of resource blades and the corresponding scheduler optimizations is a topic for future exploration.
+
+\paragraphb{Page-level remote memory access}
+In traditional servers, the typical memory access between CPU and DRAM occurs in the unit of a cache-line size (64B in x86). However, we assume that CPU blades access remote memory at the granularity of a page (4KB in x86), since this requires little or no modification to the virtual memory subsystems of hypervisors or operating systems, and is completely transparent to user-level applications. Note that this assumption constitutes a bad-case scenario for our study since it significantly increases the amount of data read per memory access (and hence, latency for transferring this larger amount of data across the network) as well as the total traffic volume.
+
+%. ; however, page-level access has been shown to better exploit spatial locality in common memory access patterns and hence amortizes the round-trip latency more effectively in the context of \dis ~\cite{ddcHwDesign1}. In addition, page-level access requires little or no modification to the virtual memory subsystems of hypervisors or operating systems, and is completely transparent to user-level applications. We further assume that those remotely accessed pages are not shared by multiple VMs at a given time, in order to not introduce cache coherence traffic across the network.
+
+\paragraphb{Block-level distributed data placement}
+We assume that applications in \dis read and write large files at the granularity of ``sectors'' ($512$B in x86). Furthermore, the disk block address space is range partitioned into ``blocks'', that are uniformly distributed across the disk blades. The latter is partially motivated by existing distributed file systems (\eg, HDFS) and also enables better load balancing. % because this spreads load. 
+
+\subsection{Design knobs}
+\label{ssec:knobs}
+Given the above assumptions, we are left with two key system design choices that we treat as ``knobs'' in our study: {\em the amount of local memory on compute blades} and  {\em the scope of disaggregation} (e.g., rack- or datacenter-scale). We will explore how varying these knobs impacts the network requirements and traffic characteristics in \dis. 
+
+The remainder of this paper is organized as follows: we analyze  network-layer bandwidth and latency requirements in \dis (\S\ref{sec:requirements}), then study the performance requirements for transport-layer protocols in \dis
+%, in particular evaluating the suitability of existing transport protocols
+ (\S\ref{sec:existing}). We end with a discussion of related work in \S\ref{sec:discussion}.
+
+
+%--------------------------------------------------
+% END OF USEFUL STUFF
+%-----------------------------
+
+
+% \cut{
+% \begin{itemize}[leftmargin=*]
+% 	\itemsep0em
+% 	\item {\bf Size of local cache:} how does the size of local cache on CPU blades affect the network requirements and traffic characteristics for \dis?
+% 	\item {\bf Scale of disaggregation:} whether disaggregation is performed at the rack-scale, pod-scale or the entire datacenter scale?
+% 	\item {\bf Data placement:} whether or not locality in data placement and access essential for \dis? \sr{This isn't a knob really since we're just picking one model?} \rc{$\gets$ Yes, unlikely that we will be able to evaluate multiple data placement strategies.}
+% %	\item {\bf page size and access granularity:} \sr{ditto above?} ??
+% \end{itemize} }
+
+%\sr{Perhaps simplify how this is presented (though specific text can be reused) with slightly massaged org as follows:
+%
+%\begin{itemize}
+%\item S2.2) System-level assumptions: Unlike hardware design, we have less to guide us on this front. Hence, we make the following which we believe are reasonable:
+%\begin{itemize}
+%\item VM as abstraction. Rationale: This seems like the natural starting point since it allows seamless transition for legacy apps. (copy from below and hotnets)
+%\item Hardware organization: we assume racks (as today) where each rack has a mix of different types of resource blades (in some proportion that isn't important). This is in contrast to (say) a rack full of only disk blades, another with mem blades, etc. Rationale: leads to a more uniform architecture, hence simplifies the network design. Also, means hardware organization is independent of scope of disaggr (i.e., only scheduler needs to change to support different scopes).
+%\item Distributed data placement: because this spreads load. We see no compelling reason to do otherwise (right?)
+%\item Page-level memory/storage access (copy rationale from HotNets paper
+%\end{itemize}
+%\end{itemize}
+%\begin{itemize}
+%\item (S2.3 (or part of 2.2)) This leaves us with two key system design choices that we treat as knobs: local cache size and the scale of disaggregation. We consider different possibilities for both in this paper.
+%\item On to next section (i.e., no methodology) \ldots 
+%\end{itemize}
+%
+%}
+
+
+% \cut{\sr{not needed with new org above?} \st{As briefly outlined in \S\ref{sec:intro}, the scale at which resource disaggregation will happen is, at best, unclear. The goal of this paper is not to advocate any particular architecture for disaggregation datacenters. Nevertheless, we believe that some of the architectural aspects of disaggregated datacenters are inevitable for reasons of feasibility, performance and scalability. }
+
+% \sr{I'd replace para below by just saying that: in this section we explain our assumptions w.r.t. hardware (S2.1), system architecture (S2.2) and our  design `knobs' (S2.3). } 
+% \st{We start this section by elaborating on our interpretation of a disaggregated datacenter, along with a discussion of some necessary architectural design decisions and the rationale behind these decisions (\S\ref{ssec:arch}). We then make some important assumptions regarding the usage model, implementation and execution of computing frameworks on this architecture (\S\ref{ssec:assumptions}) that allow us to explore the three questions outlined in \S\ref{sec:intro}. Finally, in \S\ref{ssec:summary}, we give a high-level overview of the experimental and simulation setup used in our study.}}
+
+%
+% \begin{figure*}
+% 	\centering
+% 	\label{fig:ddcIllustration}
+% 	\subfigure[Workload Characterization (\S\ref{sec:workloads})] {	
+% 	\begin{tikzpicture}[xscale=0.5, yscale=0.35]
+
+% 	\draw[very thick, black, <->] (-1, 12.25) to [out=45, in=135] (5, 12.25);
+
+% 	\draw[thick, fill=white] (-3, 5) rectangle (1, 11); 
+% 	\draw[thick, fill=white] (-2, 12) rectangle (0, 10); 
+% 	\draw (-1, 11) node {\small{CPU}};
+% 	% \draw (-1, 10.5) node {\small{Handler}};
+	
+% 	\draw[thick, fill=blue] (-2.75, 7.5) rectangle (-0.75, 8.5);
+% 	\draw[thick, fill=green] (-2.75, 5.5) rectangle (-0.75, 7.5);
+% 	\draw (-1.75, 8) node {\small{LM}};
+% %	\draw (-2.75, 7.5) -- (-0.75, 7.5);
+% 	\draw (-1.75, 6.5) node {\small{RM}};
+% %	\draw (-2.75, 6.5) -- (-0.75, 6.5);
+% %	\draw (-1.75, 6) node {\small{K$\to$O}};
+
+% %	\draw[thick] (-0.25, 5.5) rectangle (0.75, 8.5);
+% 	\draw[thick, fill=gray] (-0.25, 8.5) rectangle (0.75, 7.5);
+% 	\draw[thick, fill=gray] (-0.25, 5.5) rectangle (0.75, 6.5);
+% 	\draw (0.25, 7) node {\small{$\dots$}};
+
+% 	\draw[very thick, black, dashed, <->] (-1.5, 10) -- (-1.75, 8.5);
+% 	\draw[very thick, black, dashed, <->] (-0.5, 10) -- (0.25, 8.5);
+% 	\draw[very thick, black, dashed, <->] (-0.5, 10) -- (-0.45, 6);
+
+% 	\draw (2, 6.5) node {\Large{$\dots$}};
+
+% 		\draw[thick, fill=white] (3, 5) rectangle (7, 11); 
+% 		\draw[thick, fill=white] (4, 12) rectangle (6, 10); 
+% 		\draw (5, 11) node {\small{CPU}};
+% 		% \draw (5, 10.5) node {\small{Handler}};
+
+% 		\draw[thick, fill=green] (3.25, 5.5) rectangle (5.25, 7.5);
+% 		\draw[thick, fill=blue] (3.25, 7.5) rectangle (5.25, 8.5);
+% 		\draw (4.25, 8) node {\small{LM}};
+% 		\draw (4.25, 6.5) node {\small{RM}};
+
+% 	%	\draw[thick] (-0.25, 5.5) rectangle (0.75, 8.5);
+% 		\draw[thick, fill=gray] (5.75, 8.5) rectangle (6.75, 7.5);
+% 		\draw[thick, fill=gray] (5.75, 5.5) rectangle (6.75, 6.5);
+% 		\draw (6.25, 7) node {\small{$\dots$}};
+
+% 		\draw[very thick, black, dashed, <->] (4.5, 10) -- (4.25, 8.5);
+% 		\draw[very thick, black, dashed, <->] (5.5, 10) -- (6.25, 8.5);
+% 		\draw[very thick, black, dashed, <->] (5.5, 10) -- (5.55, 6);
+
+
+
+% 			% \draw[thick, black] (8, 4.75) -- (8.1, 4.5);
+% 			% \draw[thick, black] (8.1, 4.5) -- (9.75, 4.5);
+% 			% \draw[thick, black] (9.75, 4.5) to [in=90, out=0] (10, 4.25);
+% 			% \draw[thick, black] (10.25, 4.5) to [in=90, out=180] (10, 4.25);
+% 			% \draw[thick, black] (10.25, 4.5) -- (11.9, 4.5);
+% 			% \draw[thick, black] (12, 4.75) -- (11.9, 4.5);
+% 			% \draw (10, 3.75) node {\tt SuffixStore};
+
+
+% 			% 	\draw[thick, fill=white] (13, 5) rectangle (17, 11);
+% 			% 	\draw[thick, fill=white] (14, 12) rectangle (16, 10);
+% 			% 	\draw (15, 11.5) node {\small{CPU}};
+% 			% 	% \draw (15, 10.5) node {\small{Handler}};
+% 			%
+% 			% 	\draw[thick] (13.25, 5.5) rectangle (15.25, 8.5);
+% 			% 	\draw (14.25, 8) node {\small{P$\to$M}};
+% 			% 	\draw (13.25, 7.5) -- (15.25, 7.5);
+% 			% 	\draw (14.25, 7) node {\small{O$\to$P}};
+% 			% 	\draw (13.25, 6.5) -- (15.25, 6.5);
+% 			% 	\draw (14.25, 6) node {\small{K$\to$O}};
+% 			%
+% 			% %	\draw[thick] (-0.25, 5.5) rectangle (0.75, 8.5);
+% 			% 	\draw[thick, fill=gray] (15.75, 8.5) rectangle (16.75, 7.5);
+% 			% 	\draw[thick, fill=gray] (15.75, 5.5) rectangle (16.75, 6.5);
+% 			% 	\draw (16.25, 7) node {\small{$\dots$}};
+% 			%
+% 			% 	\draw[very thick, black, dashed, <->] (14.5, 10) -- (14.25, 8.5);
+% 			% 	\draw[very thick, black, dashed, <->] (15.5, 10) -- (16.25, 8.5);
+% 			% 	\draw[very thick, black, dashed, <->] (15.5, 10) -- (15.55, 6);
+
+% 				% \draw[thick, black] (13, 4.75) -- (13.1, 4.5);
+% 				% \draw[thick, black] (13.1, 4.5) -- (14.75, 4.5);
+% 				% \draw[thick, black] (14.75, 4.5) to [in=90, out=0] (15, 4.25);
+% 				% \draw[thick, black] (15.25, 4.5) to [in=90, out=180] (15, 4.25);
+% 				% \draw[thick, black] (15.25, 4.5) -- (16.9, 4.5);
+% 				% \draw[thick, black] (17, 4.75) -- (16.9, 4.5);
+% 				% \draw (15, 3.75) node {\tt LogStore};
+
+
+% 	\end{tikzpicture}
+% 	}
+% %  	\end{minipage}
+% %  	\begin{minipage}[c]{0.19\textwidth}
+% % 	    \caption{\small{{\bf Methodology Overview:} We run real-world applications on a $5$-node Amazon EC2 cluster and emulate disaggregated architecture as follows. The memory accesses are captured into ``local cache'' accesses and ``remote memory'' accesses using an in-house implementation of a special instrumentation tool (SIT) described in \S\ref{sec:workloads}. The local disk accesses are captured using the {\tt blktrace} utility. Finally, all remote memory and disk accesses are captured using {\tt TCPdump}.}}
+% % 	\label{fig:system}
+% % %	\end{minipage}
+% % \end{figure}
+% % %
+% % %
+% % %
+% % \begin{figure}
+% %  \begin{minipage}{0.33\textwidth}
+% % 	\centering
+% 	\hspace{0.1in}
+% 	\subfigure[Understanding application requirements (\S\ref{sec:requirements})] {	
+% 	\begin{tikzpicture}[xscale=0.6, yscale=0.35]
+
+% 	% \draw[thick, fill=white] (4, 14) rectangle (10, 19);
+% 	% \draw (7, 18.25) node {{Coordinator}};
+% 	% \draw[thick] (4.25, 14.5) rectangle (9.75, 17.5);
+% 	% \draw (7, 17) node {\small{Partition$\to$Machine}};
+% 	% \draw (4.25, 16.5) -- (9.75, 16.5);
+% 	% \draw (7, 16) node {\small{Offset$\to$Partition}};
+% 	% \draw (4.25, 15.5) -- (9.75, 15.5);
+% 	% \draw (7, 15) node {\small{Key$\to$Offset} \footnotesize{(NoSQL only)}};
+% 	%
+% 	% \draw[very thick, dashed, gray, <->] (7, 13.75) -- (0, 12.5);
+% 	% \draw[very thick, dashed, gray, <->] (7, 13.75) -- (5, 12.5);
+% 	% \draw[very thick, dashed, gray, <->] (7, 13.75) -- (10, 12.5);
+% 	% \draw[very thick, dashed, gray, <->] (7, 13.75) -- (15, 12.5);
+% 	%
+% 	% \draw[very thick, black, <->] (-1, 12.25) to [out=45, in=135] (5, 12.25);
+% 	% \draw[very thick, black, ->] (0.75, 13.25) -- (4, 12.25);
+% 	% \draw[very thick, black, <-] (-1, 12.25) to [out=45, in=180] (0.5, 13.75);
+% 	% \draw[very thick, black, ->] (0.5, 13.75) -- (9, 12.25);
+% 	% \draw[very thick, black, <-] (-1, 12.25) to [out=45, in=180] (0.25, 14.25);
+% 	% \draw[very thick, black, ->] (0.25, 14.25) -- (14, 12.25);
+
+% 	% \draw[very thick, black, <->] (-0.5, 16.5) -- (-1.25, 12);
+% 	% \draw (-0.5, 17.5) node {\small{\tt search(string str)}};
+
+% 	\draw[thick, fill=white] (-3, 5) rectangle (1, 13); 
+% 	\draw[thick, fill=white] (-2, 14) rectangle (0, 12); 
+% 	\draw (-1, 13) node {\small{CPU}};
+% 	% \draw (-1, 10.5) node {\small{Handler}};
+	
+% 	\draw[thick, fill=cyan] (-3.75, 9.9) rectangle (1.75, 11.1); 
+% 	\draw (-1, 10.5) node {\small{SIT (Latency Injection)}};
+			
+% 	\draw[thick, fill=blue] (-2.75, 7.5) rectangle (-0.75, 8.5);
+% 	\draw[thick, fill=green] (-2.75, 5.5) rectangle (-0.75, 7.5);
+% 	\draw (-1.75, 8) node {\small{LM}};
+% %	\draw (-2.75, 7.5) -- (-0.75, 7.5);
+% 	\draw (-1.75, 6.5) node {\small{RM}};
+% %	\draw (-2.75, 6.5) -- (-0.75, 6.5);
+% %	\draw (-1.75, 6) node {\small{K$\to$O}};
+
+% %	\draw[thick] (-0.25, 5.5) rectangle (0.75, 8.5);
+% 	\draw[thick, fill=gray] (-0.25, 8.5) rectangle (0.75, 7.5);
+% 	\draw[thick, fill=gray] (-0.25, 5.5) rectangle (0.75, 6.5);
+% 	\draw (0.25, 7) node {\small{$\dots$}};
+
+% 	\draw[very thick, black, dashed, <->] (-1.5, 10) -- (-1.75, 8.5);
+% 	\draw[very thick, black, dashed, <->] (-0.5, 10) -- (0.25, 8.5);
+% 	\draw[very thick, black, dashed, <->] (-0.5, 10) -- (-0.45, 6);
+
+% 	\draw[very thick, black, dashed, <->] (-1.5, 11) -- (-1.5, 12);
+% 	\draw[very thick, black, dashed, <->] (-0.5, 11) -- (-0.5, 12);
+% 	\draw[very thick, black, dashed, <->] (-0.5, 11) -- (-0.5, 12);
+
+% 	\end{tikzpicture}
+% 	}
+% %  	\end{minipage}\hfill
+% %  	\begin{minipage}[c]{0.19\textwidth}
+% % 	    \caption{\small{{\bf Methodology Overview:} We run real-world applications on a $5$-node Amazon EC2 cluster. To emulate end-to-end network latency, we inject artificial latencies for all ``remote memory'' and ``remote disk'' accesses and measure the impact of this latency to the application-level performance.}}
+% % 	\label{fig:system}
+% %	\end{minipage}
+% % \end{figure}
+% % %
+% % %
+% % \begin{figure}
+% %  \begin{minipage}{0.33\textwidth}
+% % 	\centering
+% 	\hspace{0.1in}
+% 	\subfigure[Exploring sufficiency of existing solutions (\S\ref{sec:existing})] {	
+% 	\begin{tikzpicture}[xscale=0.6, yscale=0.35]
+
+% 	% \draw[thick, fill=white] (4, 14) rectangle (10, 19);
+% 	% \draw (7, 18.25) node {{Coordinator}};
+% 	% \draw[thick] (4.25, 14.5) rectangle (9.75, 17.5);
+% 	% \draw (7, 17) node {\small{Partition$\to$Machine}};
+% 	% \draw (4.25, 16.5) -- (9.75, 16.5);
+% 	% \draw (7, 16) node {\small{Offset$\to$Partition}};
+% 	% \draw (4.25, 15.5) -- (9.75, 15.5);
+% 	% \draw (7, 15) node {\small{Key$\to$Offset} \footnotesize{(NoSQL only)}};
+% 	%
+% 	% \draw[very thick, dashed, gray, <->] (7, 13.75) -- (0, 12.5);
+% 	% \draw[very thick, dashed, gray, <->] (7, 13.75) -- (5, 12.5);
+% 	% \draw[very thick, dashed, gray, <->] (7, 13.75) -- (10, 12.5);
+% 	% \draw[very thick, dashed, gray, <->] (7, 13.75) -- (15, 12.5);
+% 	%
+% 	% \draw[very thick, black, <->] (-1, 12.25) to [out=45, in=135] (5, 12.25);
+% 	% \draw[very thick, black, ->] (0.75, 13.25) -- (4, 12.25);
+% 	% \draw[very thick, black, <-] (-1, 12.25) to [out=45, in=180] (0.5, 13.75);
+% 	% \draw[very thick, black, ->] (0.5, 13.75) -- (9, 12.25);
+% 	% \draw[very thick, black, <-] (-1, 12.25) to [out=45, in=180] (0.25, 14.25);
+% 	% \draw[very thick, black, ->] (0.25, 14.25) -- (14, 12.25);
+
+% 	% \draw[very thick, black, <->] (-0.5, 16.5) -- (-1.25, 12);
+% 	% \draw (-0.5, 17.5) node {\small{\tt search(string str)}};
+
+% 	\draw[thick, fill=white] (-8, 5) rectangle (-5, 9); 
+% 	\draw[thick, fill=white] (-8, 9.75) rectangle (-5, 11.25); 
+% 	\draw[thick, fill=white] (-8, 12) rectangle (-5, 14); 
+% 	\draw (-6.5, 8.5) node {\small{Network}};
+% 	\draw (-6.5, 7.5) node {\small{Simulator}};
+% 	\draw (-6.5, 6.5) node {\small{(Individual}};
+% 	\draw (-6.5, 5.5) node {\small{Flow delays)}};
+% 	\draw (-6.5, 10.5) node {\small{Scale up}};
+% 	\draw (-6.5, 13.5) node {\small{Flows from}};
+% 	\draw (-6.5, 12.5) node {\small{Step (a)}};
+% 	\draw[thick, black, ->] (-6.5, 12) -- (-6.5, 11.25);
+% 	\draw[thick, black, ->] (-6.5, 9.75) -- (-6.5, 9);
+% 	\draw[thick, black, -] (-5, 7) -- (-4.5, 7);
+% 	\draw[thick, black, -] (-4.5, 7) -- (-4.5, 10.5);
+% 	\draw[thick, black, ->] (-4.5, 10.5) -- (-3.75, 10.5);
+
+% 	\draw[thick, fill=white] (-3, 5) rectangle (1, 13); 
+% 	\draw[thick, fill=white] (-2, 14) rectangle (0, 12); 
+% 	\draw (-1, 13) node {\small{CPU}};
+% 	% \draw (-1, 10.5) node {\small{Handler}};
+	
+% 	\draw[thick, fill=cyan] (-3.75, 9.9) rectangle (1.75, 11.1); 
+% 	\draw (-1, 10.5) node {\small{SIT (Latency Injection)}};
+			
+% 	\draw[thick, fill=blue] (-2.75, 7.5) rectangle (-0.75, 8.5);
+% 	\draw[thick, fill=green] (-2.75, 5.5) rectangle (-0.75, 7.5);
+% 	\draw (-1.75, 8) node {\small{LM}};
+% %	\draw (-2.75, 7.5) -- (-0.75, 7.5);
+% 	\draw (-1.75, 6.5) node {\small{RM}};
+% %	\draw (-2.75, 6.5) -- (-0.75, 6.5);
+% %	\draw (-1.75, 6) node {\small{K$\to$O}};
+
+% %	\draw[thick] (-0.25, 5.5) rectangle (0.75, 8.5);
+% 	\draw[thick, fill=gray] (-0.25, 8.5) rectangle (0.75, 7.5);
+% 	\draw[thick, fill=gray] (-0.25, 5.5) rectangle (0.75, 6.5);
+% 	\draw (0.25, 7) node {\small{$\dots$}};
+
+% 	\draw[very thick, black, dashed, <->] (-1.5, 10) -- (-1.75, 8.5);
+% 	\draw[very thick, black, dashed, <->] (-0.5, 10) -- (0.25, 8.5);
+% 	\draw[very thick, black, dashed, <->] (-0.5, 10) -- (-0.45, 6);
+
+% 	\draw[very thick, black, dashed, <->] (-1.5, 11) -- (-1.5, 12);
+% 	\draw[very thick, black, dashed, <->] (-0.5, 11) -- (-0.5, 12);
+% 	\draw[very thick, black, dashed, <->] (-0.5, 11) -- (-0.5, 12);
+
+% 	\end{tikzpicture}
+% 	}
+% %  	\end{minipage}
+% %  	\begin{minipage}[c]{0.19\textwidth}
+% 	    \caption{\small{(left) {\bf Workload Characterization:} We run real-world applications on a $5$-node Amazon EC2 cluster and emulate disaggregated architecture as follows. The memory accesses are captured into ``local cache'' accesses and ``remote memory'' accesses using an in-house implementation of a special instrumentation tool (SIT) described in \S\ref{sec:workloads}. The local disk accesses are captured using the {\tt blktrace} utility. Finally, all remote memory and disk accesses are captured using {\tt TCPdump}. (center) {\bf Understanding application requirements:} We run real-world applications on a $5$-node Amazon EC2 cluster. To emulate end-to-end network latency, we inject artificial latencies for all ``remote memory'' and ``remote disk'' accesses and measure the impact of this latency to the application-level performance. (right) {\bf Exploring sufficiency of existing solutions:} Same as Step 2, but the latencies injected for each flow are now a result of network simulation results. \rc{SIT representation imprecise}}}
+% 	\label{fig:system}
+% %	\end{minipage}
+% \end{figure*}
+%
+
+%\paragraphb{Virtualization, resource allocation and scheduling}
+%The scheduler allocates resources by assigning resource blades (or a part of), configuring the resultant resource and address space assignments at the selected blades, and configuring the network that interconnects these blades. Depending of the scale of disaggregation, each rack may contain different types of resource blades and the scheduler may optimize for locality when it allocates resources to a job. The best layout of resource blades and the corresponding scheduler optimizations is a topic for future exploration.
+
+% \paragraphb{VM as a computational unit}
+% The current datacenter usage model is heavily based on the server-centric architecture. While physical servers in datacenters have evolved to server virtualization~\cite{cc} or other comparable technologies, they are still all centered around the concept of server, which aggregates slices to hardware resources within a server.
+%
+% In contrast, the usage model of a disaggregated datacenter does not necessarily follow the same approach; since computation, storage, and I/O functions can be completely disseminated across the datacenter, we do not need to restrict our usage model within the VM-oriented architecture. However, we note that the VM model can be still useful,
+%
+% \paragraphb{Local and remote memory}
+% While disaggregation of I/O devices is relatively straightforward as discussed above, memory disaggregation brings a set of new challenges in terms of performance. Since memory access from CPUs must run at very high speed, similar to prior work, we assume that each CPU blade retains some amount of local memory that acts as a cache for remote memory; this disaggregating memory can be viewer as expanding the memory hierarchy to include a remote level.
+%
+% \paragraphb{Page-level remote memory access}
+% We assume that CPU blades access remote memory at the page granularity (4KB in x86) over the fabric. While typical memory access between CPU and DRAM in traditional servers occurs in the unit of cache-line size (64B in x86), it is known that page level access better exploits spatial locality in common memory access patters and amortized the routing-trip latency more effectively. In addition, page-level access requires little or no modification to the virtual memory subsystems of hypervisor or operating system, and it is completely transparent to user-level applications. We further assume that those remotely accessed pages are not shared by multiple VMs at a given time, in order to not introduce cache coherence traffic across the network.
+%
+% \paragraphb{Block-level remote storage access}
+% We assume that CPU blades access remote storage at the block granularity (4KB in x86) over the fabric. This is the storage access granularity between CPU and current storage devices (disk, SSD, etc) in traditional servers.
+
+% \cut{
+% \subsection{Methodology Overview}
+% \sr{skip this section and insert methodology inline with each section as relevant? It's too hard to follow (or weigh) at this point.}
+
+% Figure~\ref{fig:system} gives a high-level overview of our methodology to explore the three questions outlined in \S\ref{sec:intro}. We provide details for each of the three steps in respective sections, but note that the requirements from the network fabric are heavily dependent on the underlying application. To that end, we explore a wide variety of applications varying from batch processing (long running background jobs), point queries (user facing short jobs) and stream processing (real-time data analytics), as outlined in Table~\ref{tab:workloads}. }
+%Each of these applications typically have very different data read/write patterns, which will translate to very different traffic patterns in disaggregated datacenters. In fact, within these application types, each particular system and/or algorithm may have different patterns. To that end, we use all six different workloads across these three applications in our evaluation. These workloads are described in Table~\ref{tab:workloads}.
+
+% \begin{table}
+% 	\centering
+% 	\caption{\small{Workloads and applications used in our evaluation. \rc{Describe data sizes for each application; and the datasets}}}
+% 	\label{tab:workloads}
+% 	\vspace{0.1in}
+%   \begin{tabular}{c|c|c}
+% 	  \hline
+% 		\textbf{Application} & \textbf{Application} & \textbf{System}\\
+% 		\textbf{domain} & \textbf{} & \textbf{}\\\hline \hline
+%     Batch & WordCount & Hadoop\\\hline
+%     Batch & WordCount & Spark\\\hline
+%     Batch & TeraSort & Hadoop\\\hline
+%     Batch & Collaborative & GraphLab\\
+%      & Filtering & \\\hline
+%     Point Queries & Key-value store & Memcached\\\hline
+%     % Point Queries & Search & ElasticSearch & PS\\\hline
+%     % Stream Processing & Wordcount & Storm & S\\\hline
+%     \hline
+% \end{tabular}
+% \end{table}
+
+%
+% \subsection{Summary of key findings}
+% \label{ssec:summary}
+%
+% \begin{itemize}
+% 	\item Key Findings
+% 	\begin{itemize}
+% 		\item Network traffic
+% 			\begin{itemize}
+% 				\item no elephant/mice: implication?
+% 				\item inter-arrival times no longer poisson: implication?
+% 				\item traffic less bursty: implication?
+% 				\item various design knobs for better control: implications?
+% 			\end{itemize}
+% 		\item Application Requirements
+% 		\begin{itemize}
+% 			\item 40Gbps suffices
+% 			\item 5us RTT sufficient to maintain current performance
+% 		\end{itemize}
+% 		\item Existing Solutions enough?
+% 	\end{itemize}
+% \end{itemize}
