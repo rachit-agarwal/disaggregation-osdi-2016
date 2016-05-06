@@ -210,7 +210,7 @@ We start by observing that the network introduces three unavoidable latency over
 Together, these components contribute to roughly $3.14\mu$s across racks and $1.38\mu$s within a rack.\footnote{Discussions with switch vendors revealed that they are approaching the fundamental limits in reducing switching delays (for electronic switches), hence we treat the switching delay as unavoidable.} 
 %, assuming cut-through switching as is the norm in commodity datacenter switches~\cite{arista,broadcom}.
 
-In contrast, the network software at the endpoints is a significant contributor to the end-to-end latency! Recent work report a round-trip kernel processing time of $950$ measured on a $2.93$GHz Intel CPU running FreeBSD (see ~\cite{luigi} for details), while ~\cite{ramcloud} report 
+In contrast, the network software at the endpoints is a significant contributor to the end-to-end latency! Recent work report a round-trip kernel processing time of $950$ ns measured on a $2.93$GHz Intel CPU running FreeBSD (see ~\cite{luigi} for details), while ~\cite{ramcloud} report 
 an overhead of around $2\mu$s to copy data between user space and the NIC.
 With these estimates, the network software contributes roughly $5.9\mu$s latency --- this represents $65\%$ of the end-to-end latency in our baseline inter-rack scenario and $81\%$ in our baseline intra-rack scenario.
 
@@ -251,6 +251,13 @@ As shown in column\#5 in Table~\ref{tab:latency}, the use of RDMA together with 
 
 % 	\item Somewhat surprisingly, the scope of disaggregation (i.e., rack-scale vs. datacenter-wide) is not an important factor in the feasibility of scaling disaggregation; instead, network bandwidth and an application's memory access pattern play a more important role. Our evaluation suggests that disaggregation at the scale of an entire datacenter is possible.
 \end{itemize} 
+
+\begin{figure}
+  \centering
+    \includegraphics[width=\columnwidth]{img/mem_bandwidth.pdf} 
+    \caption{\small{\rc{memory bandwidth caption}}
+  \label{fig:impb}
+\end{figure}
 
 % An immediate takeaway is that managing network congestion to achieve zero or close-to-zero queueing delay will be essential. This need is exacerbated by the 
 % non-trivial role of transmission delays (compared to classic wide-area contexts where propagation delay dominates): e.g., a packet that is delayed such that it incurs a store-and-forward delay at each switch along a 5-hop path will accumulate an additional $4\mu$s of delay just in transmission time! 
