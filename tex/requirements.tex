@@ -200,6 +200,16 @@ Next, we examine the feasibility of meeting our targets for network bandwidth an
 \paragraphb{Network bandwidth} Our bandwidth requirements are easily met: $40$Gbps is available today in commodity datacenter switches \emph{and} server NICs~\cite{40gnic}; in fact, even $100$Gbps switches and NICs are available, though not as widely~\cite{100gnic}.
 Thus, ignoring the potential effects of congestion (which we consider next in \S\ref{sec:existing}), providing the network bandwidth needed for disaggregation should pose no problem. Moreover, this should continue to be the case in the future because the trend in link bandwidths currently exceeds that in number of cores~\cite{hmc1, hmc2, hmc3}.
 
+\rc{
+    \paragraphb{Intuition for results} Figure~\ref{fig:memband} compares memory bandwidth with perf degradation  which explains our results. More memory bandwidth = more degradation
+}
+
+\begin{figure}
+  \centering
+    \includegraphics[width=\columnwidth]{img/mem_bandwidth.pdf} 
+    \caption{\small{\rc{memory bandwidth caption}}}
+  \label{fig:memband}
+\end{figure}
 
 \paragraphb{Network latency} The picture is less clear with respect to latency. In what follows, we consider the various components of network latency and whether they can be accommodated in our target budget of 3$\mu$secs (for sharks) to 5$\mu$secs (for dolphins).
 
@@ -251,13 +261,6 @@ As shown in column\#5 in Table~\ref{tab:latency}, the use of RDMA together with 
 
 % 	\item Somewhat surprisingly, the scope of disaggregation (i.e., rack-scale vs. datacenter-wide) is not an important factor in the feasibility of scaling disaggregation; instead, network bandwidth and an application's memory access pattern play a more important role. Our evaluation suggests that disaggregation at the scale of an entire datacenter is possible.
 \end{itemize} 
-
-\begin{figure}
-  \centering
-    \includegraphics[width=\columnwidth]{img/mem_bandwidth.pdf} 
-    \caption{\small{\rc{memory bandwidth caption}}}
-  \label{fig:memband}
-\end{figure}
 
 % An immediate takeaway is that managing network congestion to achieve zero or close-to-zero queueing delay will be essential. This need is exacerbated by the 
 % non-trivial role of transmission delays (compared to classic wide-area contexts where propagation delay dominates): e.g., a packet that is delayed such that it incurs a store-and-forward delay at each switch along a 5-hop path will accumulate an additional $4\mu$s of delay just in transmission time! 
