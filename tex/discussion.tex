@@ -1,6 +1,10 @@
 \section{Related Work and Discussion}
 \label{sec:discussion}
 
+
+
+
+
 As mentioned earlier, there are many recent and ongoing efforts to prototype disaggregated hardware. We discussed the salient features of these efforts inline throughout this paper and hence we only briefly elaborate on them here. 
 
 Lim \etal~\cite{ddcHwDesign1, ddcHwDesign2} discuss the trend of growing peak compute-to-memory ratio, warning of the ``memory capacity wall'' and prototype a disaggregated memory blade. Their results demonstrate that memory disaggregation is feasible and can even provide a 10x performance improvement in memory constrained environments. As noted earlier, our study focuses on the (for us) worst-case scenario where applications are not memory constrained in the non-disaggregated scenario and hence the potential performance degradation due to disaggregation is high. For the same reason, we did not consider redesigning applications to exploit the plentiful remote memory available in \dis. 
@@ -33,6 +37,50 @@ R2C2~\cite{r2c2} explores the problem of designing a network stack for rack-scal
 Our study finds that such efforts at enabling disaggregation at the rack scale with specialized interconnects and protocols \an{are largely unnecessary to achieve application performance.}
 } 
 
+
+
+
+
+
+
+
+\begin{figure}
+  \centering
+    \includegraphics[width = \columnwidth]{img/benefit.eps} 
+  \caption{\small{Running COST in a simulated DDC. COST-DDC is 1.48 to 3.04 faster than GraphX-Server Centric. The datasets we evaluated are, Twitter (4.17m nodes, 1.47b edges), UK-2007-05 (105m nodes, 3.7b edges), and Friendster (65m nodes, 1.8b edges)}}
+  \label{fig:benefit}
+\end{figure}
+
+
+\subsection{Improve App Performance in DDC}
+While most of the existing applications' performance does not degrade significantly in a DDC, we envision that applications could be rewritten to fully take advantage of disaggregation. 
+A recent paper from McSherry et. al.~\cite{cost} shows that current server centric architecture incurs high overhead to scale out.
+For applications such as distributed graph engines, the coordination and communication overhead is too substantial for them to benefit from parallelism.
+
+We conduct a similar experiment as COST~\cite{cost} to show that applications adapted to disaggregated environment can outperform traditional server centric ones.
+To simulate an application running in a DDC, we setup a virtual machine with 4 cores and 3GB of memory. 
+The server is capable of accessing an ``infinitely'' large remote memory pool by swapping to a RDMA-backed block device. 
+We run Pagerank and Connected Components using COST, a single thread graph compute engine over three large graph datasets.
+Since COST mmaps the input file, we store the input files into another RDMA-backed block device.
+For server centric architecture, we evaluate GraphX using a 16-node m2.4xlarge cluster on EC2. 
+Figure \ref{fig:benefit} shows the application runtime of COST-DDC and GraphX-Server Centric.
+For most of the case, COST-DDC is 1.48 to 3.04 times faster than GraphX-Server Centric, except Pagerank on UK-2007-5 dataset. 
+After talking to one of the author of GraphX, we discovered that the UK-2007-05 dataset has better partition property such that there are fewer vertices spanning machines, hence GraphX performs well. 
+We also evaluate the performance benefit of using remote memory over local SSD.
+From Figure ~\ref{fig:benefit}, swapping using RDMA is 1.06 to 2.15 times faster than its SSD counterpart. 
+
+
+
+
+
+
+
+
+
+
+
+
+
 \cut{
 \paragraphb{Research prototypes} \rc{Remove? Already discussed in S2 $\to$} Rack-scale disaggregation has been attracting a lot of attention recently, both in industry and in academia. Early industry rack scale prototypes include AMD SeaMicro~\cite{seamicro}, Intel RSA~\cite{rsa}, HP's The Machine~\cite{hptm}, and Facebook's Disaggregated Rack~\cite{fdr}. Indeed, several of the assumptions that led to our observations were motivated by these designs. For instance, the architecture in HP's The Machine closely resembles the hardware and software architecture in \S\ref{sec:summary} --- CPU blades with small local cache connected to four massive pools of memory via network-wide interconnect (optical, in this case). Indeed, each CPU blade uses $256$GB of local cache, while the memory blades have 1TB of main memory.
 
@@ -57,6 +105,12 @@ Existing prototypes and efforts in disaggregated datacenters~\cite{hptm, rsa,fdr
 
 \paragraphb{Distributed Shared Memory (DSM)}
 There has been much recent activity in implementing distributed shared memory environments for big data analytics. FaRM~\cite{farm}, MICA~\cite{mica}, Herd~\cite{herd}, and Grappa~\cite{grappa} all employ RDMA to enable fast remote reads in distributed settings. These systems not only demonstrate the benefits of remote memory accesses, but also show that RDMA and new technologies may enable the low latency requirements outlined in our study. Our study can inform future efforts in building applications tuned for disaggregated datacenters.
+
+
+
+
+
+
 
 % RDMA allows remote memory access without OS involvement and hence enables efficient memory sharing between servers in datacenter.
 % FaRM~\cite{farm} does lock-free reads over RDMA and enables single machine transaction using function shipping. 
