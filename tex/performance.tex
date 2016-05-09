@@ -30,7 +30,7 @@ We thus start by devising a methodology that extends our experimental setup to g
     \label{fig:trafvol}
 \end{figure*}
 %
-\newpage
+
 \subsection{Methodology: \dis Traffic Workloads}
 \label{ssec:ssmethod-traffic}
 
@@ -290,7 +290,7 @@ We set the Fastpass epoch size to be 8 packets.%, obtained from the Fastpass pap
 %
 \end{enumerate}
 
-\begin{figure*}
+\begin{figure}
   \centering
 %   \subfigure{
 %     \includegraphics[width = 4in]{img/slowdowns/100g/loadcdf} 
@@ -298,10 +298,10 @@ We set the Fastpass epoch size to be 8 packets.%, obtained from the Fastpass pap
 %   \subfigure{
 %     \includegraphics[width = 4in]{img/slowdowns/40g/loadcdf} 
 %   }
-  \includegraphics[width = 6.5in]{img/load} 
+  \includegraphics[width = \columnwidth]{img/load} 
   \caption{\small{Per-link load in each application. Among hosts, for each application there is significant variance in the load injected. This highlights the skewness of our traffic matrix.}}
   \label{fig:loadcdf}
-\end{figure*}
+\end{figure}
 
 
 
@@ -382,12 +382,12 @@ This leads us to conclude that 100Gbps links are both required and sufficient to
 
 
 %
-\begin{figure*}
+\begin{figure}
   \centering
-    \includegraphics[width = 5.5in]{img/slowdown.eps} 
+    \includegraphics[width = \columnwidth]{img/slowdown.eps} 
   \caption{\small{Application layer slowdown for each of the four applications at rack-scale and datacenter scale after injecting pFabric's FCT with 100Gbps link. }}
   \label{fig:appfabric100}
-\end{figure*}
+\end{figure}
 %
 
 
@@ -395,7 +395,7 @@ This leads us to conclude that 100Gbps links are both required and sufficient to
 \subsection{Low latency remote memory}
 \rc{
 As we have established in the previously section, a DDC requires 100Gbps bandwidth and 3-5us end-to-end latency. 
-Current datacenter network usually has 20us network latency, and by our analysis, 7-9us of end-to-end latency is within reach. 
+Current datacenter network usually has 20us network latency, and by our analysis, 5-7us of end-to-end latency is within reach. 
 If we enable RDMA inside the datacenter, which takes aways the overhead at OS layer, we can get latency as low as 3-5us. 
 We validate this by building a kernel space RDMA block device driver, and use this block device driver as the swap device.
 With the RDMA block device driver, the local machine can swap to remote memory instead of swapping to disk.
