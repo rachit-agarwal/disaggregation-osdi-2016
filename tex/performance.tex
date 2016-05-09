@@ -329,50 +329,6 @@ Since we pack resources by a factor of 3, each endpoint independently draws from
 The resulting injected load can be seen in Figure~\ref{fig:loadcdf}. 
 %\an{Note that with a $40$Gbps link bandwidth, load on some sources approaches 0.8}. 
 
-\cut{
-\sr{end v1} 
-
-\sr{start of v2}
-
-To represent a $144$-node topology using only 13 nodes of measurement data (5 CPU, 5 memory, 3 disk as discussed in \S\ref{sec:methol}), we collected two CDFs representing the interarrival and flow size distributions for each of the 70 possible source-destination pairs (recall from the discussion in \S\ref{sssec:spatialdist} that although there are 13 nodes, many source-destination pairs do not communicate).  We then assign each node in the topology a sender profile and 12 other nodes in the destination it will send traffic to. We then generate flows between these chosen source-destination pairs by drawing from the appropriate distribution in our traffic matrix. Overall, this method should approximate network traffic in \dis well enough for our evaluation of transport protocols because it draws from our observed distribution of flows that would appear in \dis.
-
-%\begin{enumerate}
-%\item our data is for 5 ec2 nodes, but we have a 144-node topology to fill.
-%\item the 5 ec2 nodes map to 5 cpu blades, 5 memory blades, and 3 disk blades
-%\item so in our 13-node trace we collect a interarrival and size CDF per s-d pair
-%\item for each node in the 144, we assign it a sender profile and pick 12 other nodes as destinations
-%\item the interarrival and flow size cdfs for flows between a source and destination as picked in the previous step are used to generate flows.
-%\item this should give an idea of network loads in a full-dc disaggregated scenario from a transport perspective.
-%\end{enumerate}
-
-%\paragraphb{Level of disaggregation: $3\times$ problem?}
-In a \pdis datacenter network, each node represents a collection of 3 resources --- one unit each of CPU, memory, and disk. However in \dis each resource is moved into a separate network node. Applying this transformation naively, one node in the old datacenter would now be spread across three nodes (one for each resource type). As a result, the datacenter as a whole would contain one-third the overall computing resources post-disaggregation. Therefore, to fairly simulate network performance in \dis while representing an equal amount of compute resources we must scale our load up by a factor of 3. We solve this problem by sampling from the size and interarrival distributions discussed above three times per source-destination pair when generating flows in our simulator to represent the presence of three units of computing resource per node.
-
-\sr{end v2}
-}
-
-\cut{ 
-% SR will incorporate later
-\an{should this para be moved to section 3? (throughout our experiments we do not inject disk flows blah blah)}
-\paragraphb{Latency Injection for Disk Flows}
-Unfortunately, the \texttt{blktrace} tool we use to gather the disk access trace does not \emph{intercept} disk accesses as SIT does for remote memory accesses. As a result, we were unable to inject latency into disk accesses in our experiments. However, our results remain significant because memory accesses are much more sensitive to latency injection than disk accesses. Accordingly, when injecting latency to determine application-level performance we only draw from the performance distribution of memory flows in our simulator.
-}
-
-%\begin{enumerate}
-%\item blktrace does not intercept, it only logs
-%\item we cannot inject latency into disk access
-%\item this is okay because a. memory is more latency sensitive anyway 
-%\item and b. there are more memory flows than disk flows.
-%\item accordingly we only consider the slowdown distribution of memory flows when injecting.
-%\end{enumerate}
-
-%\begin{enumerate}
-%\item before, one "blade" had 3 resources - cpu, memory, disk
-%\item now, each "blade" has only one resource
-%\item so, each blade should have 3x of its assigned resource
-%\item the flow generation from above is run 3x for each node.
-%\end{enumerate}
-
 
 
 
@@ -425,38 +381,6 @@ This leads us to conclude that 100Gbps links are both required and sufficient to
 \end{figure*}
 
 
-\subsection{Low latency remote memory}
-
-
-
-\cut{
-
-We repeat this with the FCTs from our rack-scale simulations. We see that the degradation with datacenter-wide disaggregation is not significantly different from that with rack scale disaggregation. The case with the greatest difference was wordcount, where datacenter- and rack-scale disaggregation incurred 6.2\% and 3.9\% application layer slowdown, respectively. This naturally follows from the results in Figures~\ref{fig:phostp}; since the network layer performance is roughly equal across the two schemes, the application layer performance is as well.
-%graphlab: dcscale 4.9 rscale 3.4
-}
-
-
-\cut{ 
-
-Finally, we note that our work su
-Note that this contrasts with recent work in the \pdis domain suggesting~\cite{kay-nsdi15} that the network can improve application performance by at most 2\%. Rather, our results suggest that in \dis network-level improvements can have a greater effect.
-
-\paragraphb{Dependent on application characteristics}
-The application layer effects depend not only on the network performance as discussed in \S\ref{ssec:nlp} above but also the characteristics of the application being evaluated. For example, memcached and terasort observe similar performance degradation despite memcached having better network performance. 
-This is because memcached performs more memory accesses than terasort. 
-} 
-
-\cut{
-%
-\begin{figure*}
-  \centering
-    \includegraphics[width = 5in]{img/slowdown40.eps} 
-  \caption{\small{Application layer slowdown for each of the four applications at rack-scale and datacenter scale after injecting pFabric's FCT with 40Gbps link. }}
-  \label{fig:appfabric40}
-\end{figure*}
-%
-}
-
 %
 \begin{figure*}
   \centering
@@ -466,70 +390,47 @@ This is because memcached performs more memory accesses than terasort.
 \end{figure*}
 %
 
-%Overall, we conclude that existing protocols should be sufficient to handle disaggregated traffic.
 
-%
-% \begin{figure}
-% 	\centering
-% 	\begin{tikzpicture}[xscale=0.6, yscale=0.35]
 
-% 	\draw[thick, fill=white] (-8, 5) rectangle (-5, 9); 
-% 	\draw[thick, fill=white] (-8, 9.75) rectangle (-5, 11.25); 
-% 	\draw[thick, fill=white] (-8, 12) rectangle (-5, 14); 
-% 	\draw (-6.5, 8.5) node {\small{Network}};
-% 	\draw (-6.5, 7.5) node {\small{Simulator}};
-% 	\draw (-6.5, 6.5) node {\small{(Individual}};
-% 	\draw (-6.5, 5.5) node {\small{Flow delays)}};
-% 	\draw (-6.5, 10.5) node {\small{Scale up}};
-% 	\draw (-6.5, 13.5) node {\small{Flows from}};
-% 	\draw (-6.5, 12.5) node {\small{Step (a)}};
-% 	\draw[thick, black, ->] (-6.5, 12) -- (-6.5, 11.25);
-% 	\draw[thick, black, ->] (-6.5, 9.75) -- (-6.5, 9);
-% 	\draw[thick, black, -] (-5, 7) -- (-4.5, 7);
-% 	\draw[thick, black, -] (-4.5, 7) -- (-4.5, 10.5);
-% 	\draw[thick, black, ->] (-4.5, 10.5) -- (-3.75, 10.5);
+\subsection{Low latency remote memory}
+\rc{
+As we have established in the previously section, a DDC requires 100Gbps bandwidth and 3-5us end-to-end latency. 
+Current datacenter network usually has 20us network latency, and by our analysis, 7-9us of end-to-end latency is within reach. 
+If we enable RDMA inside the datacenter, which takes aways the overhead at OS layer, we can get latency as low as 3-5us. 
+We validate this by building a kernel space RDMA block device driver, and use this block device driver as the swap device.
+With the RDMA block device driver, the local machine can swap to remote memory instead of swapping to disk.
 
-% 	\draw[thick, fill=white] (-3, 5) rectangle (1, 13); 
-% 	\draw[thick, fill=white] (-2, 14) rectangle (0, 12); 
-% 	\draw (-1, 13) node {\small{CPU}};
-% 	% \draw (-1, 10.5) node {\small{Handler}};
-	
-% 	\draw[thick, fill=cyan] (-3.75, 9.9) rectangle (1.75, 11.1); 
-% 	\draw (-1, 10.5) node {\small{SIT (Latency Injection)}};
-			
-% 	\draw[thick, fill=blue] (-2.75, 7.5) rectangle (-0.75, 8.5);
-% 	\draw[thick, fill=green] (-2.75, 5.5) rectangle (-0.75, 7.5);
-% 	\draw (-1.75, 8) node {\small{LM}};
-% %	\draw (-2.75, 7.5) -- (-0.75, 7.5);
-% 	\draw (-1.75, 6.5) node {\small{RM}};
-% %	\draw (-2.75, 6.5) -- (-0.75, 6.5);
-% %	\draw (-1.75, 6) node {\small{K$\to$O}};
+We implement the block device driver on a machine with Mellanox  4xFDR Infiniband card.
+To maintain high throughput, we first use a batch implementation that batches block requests and sends all of them together to the RDMA NIC.
+The driver waits for all the request to come back and notify the upper layer.
+We test the block device throughput using \textit{dd} with direct IO, and measure the request latency by instrumenting the driver code.
+The block device throughput is only 0.8GB/s and the latency is around 4-16us.
+We observed that many block requests are actually contiguous in address, so we merge these request in to one large request. 
+With request merging, the throughput becomes 2.6GB/s, which is ~3x better than the batch version. 
+The performance of the block device driver can be further improved by issuing RDMA requests asynchronously.
+We create a data structure to keep track of all the out going requests and notify the upper layer immediately for each completed request.
+This improves the throughput to 3.3GB/s which is as high as a local RamFS, and reduces the request latency to 3-4us (Table \ref{tab:rdma_latency}).
 
-% %	\draw[thick] (-0.25, 5.5) rectangle (0.75, 8.5);
-% 	\draw[thick, fill=gray] (-0.25, 8.5) rectangle (0.75, 7.5);
-% 	\draw[thick, fill=gray] (-0.25, 5.5) rectangle (0.75, 6.5);
-% 	\draw (0.25, 7) node {\small{$\dots$}};
+\begin{table}[t]
+    \centering
+    \small
+    \begin{tabular}{ccccc}
+    \textbf{Min}	& \textbf{Avg}	& \textbf{Median} & \textbf{99.5 Pcntl}	& \textbf{Max}\\
+    \hline
+    3394 &	3492&	3438&	4549&	12254\\\hline
+    \end{tabular}
+    \caption{RDMA block device request latency(ns)}
+    \label{tab:rdma_latency}
+\end{table}
 
-% 	\draw[very thick, black, dashed, <->] (-1.5, 10) -- (-1.75, 8.5);
-% 	\draw[very thick, black, dashed, <->] (-0.5, 10) -- (0.25, 8.5);
-% 	\draw[very thick, black, dashed, <->] (-0.5, 10) -- (-0.45, 6);
+In current non-NUMA architecture, Linux Kernel only launches one \textit{kswapd} to swap out least recently used pages. 
+This could be a bottleneck for apps that heavily use remote memory.
+We enable the NUMA\_EMU feature in Linux kernel, which partitions the memory into several regions, and each memory region gets its own \textit{kswapd}. 
+This improves the throughput of swapping out memory pages.
 
-% 	\draw[very thick, black, dashed, <->] (-1.5, 11) -- (-1.5, 12);
-% 	\draw[very thick, black, dashed, <->] (-0.5, 11) -- (-0.5, 12);
-% 	\draw[very thick, black, dashed, <->] (-0.5, 11) -- (-0.5, 12);
 
-% 	\end{tikzpicture}
-% 	    \caption{\small{We run real-world applications on a $5$-node Amazon EC2 cluster. To emulate end-to-end network latency, we inject artificial latencies for all ``remote memory'' and ``remote disk'' accesses and measure the impact of this latency to the application-level performance. The latencies injected for each flow are now a result of network simulation results. \rc{SIT representation imprecise}}}
-% 	\label{fig:system3}
-% \end{figure}
+The RDMA block device driver provides us a simple and efficient way utilize remote memory. 
+We setup the block device as swap space and run the \rc{5} applications evaluated in \S \ref{sec:requirements} with lower latency requirements.
+\rc{waiting for joao's results}
 
-% \section{To do list:}
-% \begin{itemize}
-%     \item latency bandwidth requirements argument
-%     \item related work
-%     \item memcached local mode experiment
-%     \item 10G nic experiment (low)
-%     \item regenerate fig 8 and 9
-%     \item closing loop experiment (fig 10)
-    
-% \end{itemize}
+}

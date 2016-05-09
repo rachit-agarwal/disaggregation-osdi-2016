@@ -56,37 +56,12 @@ To compensate the performance noise on EC2, we run each experiment 10 times and 
 \label{ssec:rr}
 We start by evaluating application performance in a disaggregated vs. a server-centric architecture. 
 Figure~\ref{fig:latb} plots the performance degradation for each application under different assumptions about the latency and bandwidth to remote memory. In these experiments, we set the local memory in the disaggregated scenario to be  $25\%$ of that in the server-centric case (we will examine our choice of 25\% shortly). 
-%Intuitively, we would expect these applications to observe significant performance degradation on disaggregated hardware due to CPU-memory disaggregation.
-%Figure~\ref{fig:latb} shows that this is not necessarily the case, if the network fabric can support $5\mu$s end-to-end latency and $40$Gbps access link bandwidth. 
-
-%the performance degradation that results with nine different latency/bandwidth combinations, given 25\% of memory capacity as local.
-%\footnote{The small discrepancies between Figures \ref{fig:impb} and \ref{fig:latb} are due to the small number of runs used in Figure \ref{fig:impb}.} 
-% of the measured memory footprint for each workload. 
-%We now evaluate the application-level performance for various \dis configurations in terms of end-to-end network latency and access link bandwidth at the end hosts (see Figure~\ref{fig:latb}). 
 
 From Figure~\ref{fig:latb}, we see that our applications can be broadly divided into two categories based on the network latency and bandwidth needed to achieve a low performance penalty.
 For example, for the applications in Fig.~\ref{fig:latb} (top) --- Hadoop Wordcount, Hadoop Sort, Graphlab and Memcached --- a network with an end-to-end latency of $5\mu$s and bandwidth of $40$Gbps is sufficient to maintain an average performance penalty under 5\%. 
 In contrast, the applications in in Fig.~\ref{fig:latb} (bottom) --- Spark Wordcount, Spark Sort, Timely and SparkSQL BDB --- require network latencies of $3\mu$s and $40-100$Gbps bandwidth to maintain an average performance penalty under 8\%. We term the former applications {\em dolphins} and the latter {\em sharks} reflecting their more relaxed vs. demanding natures and examine the feasibility of meeting their respective requirements in \S\ref{ssec:rtt}.
 
 
-%The dolphin applications are the ones that observe less than $5\%$ performance degradation (within the application performance variance) with a network of $5\mu$s end-to-end latency and $40$Gbps access link bandwidth. 
-%Intuitively, the dolphin applications are the ones that are either not optimized to use available memory aggressively (Hadoop wordcount, Hadoop terasort) or are bottlenecked by network I/O (GraphLab, Memcached). Thus, CPU-memory disaggregation does not lead to significant performance degradation.
-
-%Shark applications, on the other hand, exploit the available memory more aggressively and have stringent latency requirements to be able to maintain the performance similar to existing server-centric architectures. 
-%Specifically, the shark applications require $3\mu$s end-to-end latency and $40$Gbps access link bandwidth to achieve negligible performance degradation.
-
-%We examine the discuss the implications (and feasibility) of the end-to-end latency and bandwidth requirements of the dolphin and shark applications in \S\ref{ssec:rtt}. Prior to that, we discuss how various parameters may impact our conclusions.
-
-% We make three observations. First, given a network with $5-10\mu$s end-to-end latency and $40$Gbps access link bandwidth, the application-level performance in \dis is within $5\%$ of that in current server-centric datacenters. 
-% Second, as shown in Figure \ref{fig:impl}, fixing bandwidth at 40Gbps, the application performance is sensitive to the increase of end-to-end latency.
-% Third, increasing the bandwidth to $100$Gbps, while ensuring $5\mu$s end-to-end network latency further reduces any performance degradation to within $2$--$3\%$ (Figure \ref{fig:impbw}).
-% Thus, we conclude that \emph{\dis should aim for an end-to-end network latency and bandwidth of $5-10\mu$s and $40$Gbps respectively.}
-
-%\paragraphb{Impact of local memory size}
-
-% of the available main memory{\footnote{The $100\%$ local CPU cache size corresponds to no CPU-memory disaggregation, as in server-centric architectures.} \rc{Shall we say that we use this as our baseline, rather than application-level performance without SIT, to incorporate SIT overhead. (a+x)/(b+x) problem.}}}. 
-%  shows that the application-level performance in \dis is within reasonable bounds (roughly $5$\%) of that in a server-centric architecture as long as the local memory cache is no smaller than $25\%$ of main memory. For larger local cache sizes, performance only improves slowly and for any smaller cache size, the performance degrades significantly. 
-% We conclude that \emph{a local memory cache that is sized at $25\%$ of current main memory is sufficient} to maintain reasonable application-level performance in \dis. In what follows, unless stated otherwise, we set the local memory size to this value.
 
 \paragraphb{Sensitivity analysis}
 Next, we evaluate the sensitivity of application performance to network bandwidth and latency. Fig.~\ref{fig:impbw} plots the performance degradation under increasing network bandwidth assuming a fixed network latency of $5\mu$s while Fig.~\ref{fig:impl} plots degradation under increasing latency for a fixed bandwidth of $40$Gbps; in both cases, local memory is set at $25\%$ as before.
@@ -170,9 +145,9 @@ Overall, we conclude that \emph{it is possible to achieve resource disaggregatio
   \centering
   \begin{tabular}{c|r|r|r|r|r|r}
 		\multirow{2}{*}{\bf Component} & \multicolumn{2}{c|}{\bf Baseline} &  \multicolumn{2}{c|}{\bf With RDMA} &  \multicolumn{2}{c}{\bf With RDMA + NIC Integration}\\
-				 &  {\bf (Across racks)} &  {\bf (Within rack)} & {\bf (Across racks)} &  {\bf (Within racks)} & {\bf (Across racks)} &  {\bf (Within racks)} \\\hline	\hline
+				 &  {\bf Inter-rack} &  {\bf Intra-rack} & {\bf Inter-rack} &  {\bf Intra-rack} & {\bf Inter-rack} &  {\bf Intra-rack} \\\hline	\hline
     OS & $2 \times 0.95$ & $2 \times 0.95$ & $0$ & $0$ & $0$ & $0$\\\hline
-    Data copy & $2 \times 2.00$ &  $2 \times 2.00$ & $2 \times 2.00$ & $2 \times 2.00$ & $2 \times 0.50$ & $2 \times 0.50$\\\hline
+    Data copy & $2 \times 1.00$ &  $2 \times 1.00$ & $2 \times 1.00$ & $2 \times 1.00$ & $2 \times 0.50$ & $2 \times 0.50$\\\hline
     Switching & $6 \times 0.24$ &  $2 \times 0.24$ & $6 \times 0.24$ & $2 \times 0.24$ & $6 \times 0.24$ & $2 \times 0.24$ \\\hline
     Propagation & $4 \times 0.20$ & $0$ & $4 \times 0.20$ & $0$ & $4 \times 0.20$ & $0$\\
     (Inter-rack) &  &   & & & &\\\hline
@@ -180,7 +155,7 @@ Overall, we conclude that \emph{it is possible to achieve resource disaggregatio
     (Intra-rack) &  &   & & & \\\hline
     Transmission & $1 \times 0.82$ & $1 \times 0.82$ & $1 \times 0.82$ & $1 \times 0.82$ & $1 \times 0.82$ & $1 \times 0.82$\\\hline
     \hline
-    {\bf Total} & {\bf $9.04\mu$s} & {$7.28\mu$s} & {$7.14\mu$s} & {$5.38\mu$s} & {\bf $4.14\mu$s} & {\bf $2.38\mu$s}\\\hline
+    {\bf Total} & {\bf $7.04\mu$s} & {$5.28\mu$s} & {$5.14\mu$s} & {$3.38\mu$s} & {\bf $4.14\mu$s} & {\bf $2.38\mu$s}\\\hline
 	\hline
   \end{tabular}
   \vspace{0.1in}
@@ -201,7 +176,10 @@ Next, we examine the feasibility of meeting our targets for network bandwidth an
 Thus, ignoring the potential effects of congestion (which we consider next in \S\ref{sec:existing}), providing the network bandwidth needed for disaggregation should pose no problem. Moreover, this should continue to be the case in the future because the trend in link bandwidths currently exceeds that in number of cores~\cite{hmc1, hmc2, hmc3}.
 
 \rc{
-    \paragraphb{Intuition for results} Figure~\ref{fig:memband} compares memory bandwidth with perf degradation  which explains our results. More memory bandwidth = more degradation
+    \paragraphb{Intuition for results} 
+In order to better understand the memory bandwidth utilization of each application, we used Intel's Performance Counter Monitor software~\cite{intel-mem-count} to read the uncore performance counters in each node in our local cluster, which reflects the number of bytes written to and read from the integrated memory controller on each CPU. The resulting correlation is in Figure~\ref{fig:memband}. 
+To validate our measurement methodology, we confirmed that we could observe memory bandwidth utilization numbers near the theoretical maximums reported by Intel using benchmarks designed to saturate memory bandwidth~\cite{mem-band-bench}.
+\rc{PG: Our Spark SQL numbers are also consistent with the measurement did in ~\cite{georgeporter}}
 }
 
 \begin{figure}
@@ -221,8 +199,8 @@ Together, these components contribute to roughly $3.14\mu$s across racks and $1.
 %, assuming cut-through switching as is the norm in commodity datacenter switches~\cite{arista,broadcom}.
 
 In contrast, the network software at the endpoints is a significant contributor to the end-to-end latency! Recent work report a round-trip kernel processing time of $950$ ns measured on a $2.93$GHz Intel CPU running FreeBSD (see ~\cite{luigi} for details), while ~\cite{ramcloud} report 
-an overhead of around $2\mu$s to copy data between user space and the NIC.
-With these estimates, the network software contributes roughly $5.9\mu$s latency --- this represents $65\%$ of the end-to-end latency in our baseline inter-rack scenario and $81\%$ in our baseline intra-rack scenario.
+an overhead of around $1\mu$s to copy data between memory and the NIC.
+With these estimates, the network software contributes roughly $3.9\mu$s latency --- this represents $55\%$ of the end-to-end latency in our baseline inter-rack scenario and $73\%$ in our baseline intra-rack scenario.
 
 The end-to-end latencies we estimated in our baseline scenarios (whether inter- or intra-rack) 
 fail to meet our target latencies for either dolphin or shark applications. Hence, we consider potential optimizations and technologies that can reduce these latencies. 
@@ -234,8 +212,9 @@ Two recent/emerging technologies show promise: RDMA and integrated NICs.
 
 
 \paragraphb{\emph{Using RDMA}}
-RDMA effectively bypasses the packet processing in the kernel, thus eliminating the OS overheads from Table~\ref{tab:latency}. Thus, using RDMA, we estimate a reduced end-to-end latency of $7.14\mu$s across racks (column\#4 in Table~\ref{tab:latency}) 
-and $5.38\mu$s within a rack.
+RDMA effectively bypasses the packet processing in the kernel, thus eliminating the OS overheads from Table~\ref{tab:latency}.
+Thus, using RDMA, we estimate a reduced end-to-end latency of $5.14\mu$s across racks (column\#4 in Table~\ref{tab:latency}) 
+and $3.38\mu$s within a rack.
 
 \paragraphb{\emph{Using NIC integration}}
 Recent industry efforts pursue the integration of NIC functions closer to the CPU~\cite{cpu-nic} which would reduce the overheads associated with copying data to/from the NIC. Rosenblum {\it et al.}~\cite{lowlatency} estimate that such integration together with certain software  optimizations can reduce copy overheads to sub-microseconds, which we estimate at $0.5\mu$s (similar to~\cite{lowlatency}). 
@@ -264,78 +243,3 @@ As shown in column\#5 in Table~\ref{tab:latency}, the use of RDMA together with 
 
 % An immediate takeaway is that managing network congestion to achieve zero or close-to-zero queueing delay will be essential. This need is exacerbated by the 
 % non-trivial role of transmission delays (compared to classic wide-area contexts where propagation delay dominates): e.g., a packet that is delayed such that it incurs a store-and-forward delay at each switch along a 5-hop path will accumulate an additional $4\mu$s of delay just in transmission time! 
-\cut{
-We examine the feasibility of achieving zero-queueing in the following sections. 
-
-One might consider two possibilities to optimizing for latency. First, adopting $100$Gbps technology \emph{not} because we need the higher capacity but instead to reduce transmission and queueing times. E.g., in the event of congestion as in our example above, the packet's transmission time overheads would be reduced from $4\mu$s to $1.6\mu$s. 
-The other option is to consider limiting the scope of disaggregation, for example, to within a single rack. Somewhat surprisingly, the potential benefits of this appear modest: the primary impact (to latency) of limiting the scope of disaggregation is to reduce the propagation delay but this already only consumes $1\mu$s from our budget.
-(Again, this ignores the potential benefits due to reduced congestion in a rack-scale architecture, which we consider in \S\ref{sec:existing}.)
-
-Finally, a key latency component will arise from software overheads 
-at the endpoints. Research prototypes in Xen have reported per-page overheads of $2-6\mu$s, depending on the page replacement algorithm~\cite{ddcHwDesign1} while recent work has argued that such overheads can be reduced to sub-microseconds with the integration of NIC functions into the CPU and software optimizations~\cite{lowlatency}. Thus, while there is reason to believe that software overheads can be optimized to fit within our target latency budget, demonstrating this remains an important topic for future exploration.
-
-\paragraphb{Implication \#1:}  The bandwidth requirements for resource disaggregation are within the reach of existing technology. The key enabling factor is a network fabric with low ($\sim 5\mu$s) end-to-end latency.
-
-\vspace{0.1in}
-\noindent
-%We now discuss the feasibility of a network fabric that provides the above end-to-end latency. Indeed, 
-There are two unavoidable contributors to end-to-end network latency --- transmission time for packets in the flow, and propagation delay. \sr{offer evidence??} Given that propagation delays are extremely small in existing datacenters, achieving low end-to-end network latency boils down to minimizing the transmission time for packets in the flow. This has several implications for design of \dis:
-
-\paragraphb{Implication \#2:} Applications running atop \dis must observe little or no queueing delays (that is, no network congestion). 
-
-\vspace{0.1in}
-\noindent
-The queueing delays observed by flow packets depend heavily on both the network traffic as well as network protocols. We return to evaluating the feasibility of achieving little or no queueing delays in \S\ref{sec:existing}. {motivate via Figure~\ref{fig:impb} and Figure~\ref{fig:impl} $\to$} Note that $100$Gbps links are already available at both switch ports and as server NICs, but are not commonly deployed. Transmission delays dominating the end-to-end network latency have the following implication in the context of \dis:
-}
-
-\cut{
-\paragraphb{Implication \#3:} While capacity constraints do not impose strict bandwidth requirements, one good reason to consider $100$Gbps links is reducing end-to-end network latency via reduction in transmission time. 
-
-\vspace{0.1in}
-\noindent
- Finally, propagation delays having little impact on end-to-end network latency has an interesting implication in \dis design:
-
-\paragraphb{Implication \#4:} Ignoring congestion, the scale of disaggregation (rack-, pod- or datacenter-scale) may have little impact on application-level performance, and disaggregation at the extreme of datacenter-scale may indeed be feasible.
-}
-
-\cut{
-\vspace{0.1in}
-\noindent
-We evaluate the application-level performance for rack- and datacenter-scale resource disaggregation in \S\ref{sec:existing}. 
-}
-
-% While $100$Gbps network bandwidth does not provide significant benefits over the $40$Gbps case, reducing the latency down to $1\mu$s can lead to applications observing essentially no performance degradation. In the hindsight, this is not surprising given our results from \S\ref{sec:workloads}, where we established that the network traffic volume does not increase significantly in \dis compared to \pdis, and that the network flows are dominated by short (latency-sensitive) memory access flows. \rc{$\gets$ needs more concrete intuition; remote memory faster than local disk; applications heavily pipelined; CPU bottleneck?}
-
-%\paragraphb{Benefits of remote memory}
-%First, given sufficient network bandwidth and small network latencies, use of remote memory can drastically improve application performance compared to traditional disk-based swap. Since the working set size is hard to predict in advance, memory tends to be highly over-provisioned in datacenter servers to prevent thrashing. Disaggregated remote memory can reduce this waste by providing an elastic memory capacity pooled at the datacenter scale. 
-
-% \paragraphb{Reducing latency more important than increasing bandwidth}
-% Second, low latency is more important than high bandwidth. The $100$Gbps bandwidth did not provide any significant improvement over the $40$Gbps link. In contrast, $10\mu$s round-trip latency causes noticeable performance degradation, as compared to the $1\mu$s case.
-
-
-%
-% \begin{figure}
-%   \centering
-%     \includegraphics[width = 3.5in]{img/vary_remote_mem.eps} 
-%   \caption{\small{\rqc{Fix latency at 5us, bandwidth at 40Gbps, Vary local memory from 0\% to 90\% of the total memory of the EC2 instance}}}
-%   \label{fig:impb}
-% \end{figure}
-%
-
-% graveyard of text scraps.
-\cut{
-from the network such that the application-level performance in \dis is comparable to that in server-centric architectures.
-Overall, our results show that:
-
-\begin{itemize}[leftmargin=*]
-	\itemsep0em
-	\item CPU blades having local cache is necessary to ensure reasonable performance, given the increased latency to access remote memory. However, $25\%$ of main memory serving as local cache suffices.
-	\item Applications require non-trivial latency performance ($5$--$10\mu$s) from the network. In contrast, $40$Gbps access link capacity suffices. Moreover, a good reason to consider higher link capacity is not to handle higher traffic volume, but to reduce the transmission time at the end-hosts.  
-    \item Ignoring congestion, the scale of disaggregation (rack versus datacenter scale) has little impact on application-level performance. \rc{$\gets$ right now, we have this results in S5 using simulations for rack and datacenter scale disagg; how should we inject latencies to make this point?}
-\end{itemize}
-
-\noindent
-}
-
-%Depending on the page eviction algorithm used, 
- %existing research prototypes report this per-page overhead to be roughly in the range of $2$--$6\mu$s~\cite{x1, x2, x3}. However, this overhead can be reduced to sub-microseconds with faster CPUs and software optimization~\cite{y1, y2, y3}, making this overhead insignificant. 

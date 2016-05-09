@@ -23,15 +23,10 @@ The high-level idea behind a disaggregated datacenter is illustrated in Figure~\
 A \dis comprises standalone hardware ``blades'' for each resource type, %including CPUs, memory, storage, and network interfaces as well as specialized components (GPUs, various ASIC accelerators, etc.). Those resource blades are
 interconnected by a network fabric.
 In this section, we present our assumptions regarding the hardware (\S\ref{ssec:hardware}) and system (\S\ref{ssec:system}) architecture in a disaggregated datacenter. Our assumptions are informed by early prototypes of \dis hardware and hence we start with a brief review of existing \dis hardware prototypes (\S\ref{ssec:prototype}).
-\cut{ 
-In this section, we discuss existing disag
-gregated hardware prototypes (\S\ref{ssec:prototype}), and use the commonalities across these prototypes to motivate the set of assumptions made in our study (\S\ref{ssec:hardware}, \S\ref{ssec:system}).
-} 
+
 We close the section by summarizing the key open design choices that remain after our assumptions (\S\ref{ssec:knobs}); we treat these as design `knobs' in our evaluation.
 %and that we explore in the remainder of this paper.
-\cut{ 
-that allow us to study the impact of several of the above design aspects on application-level performance in disaggregated datacenters 
-} 
+
 
 % \rc{This is not true for rack-scale disaggregation $\to$ The high-level idea behind a disaggregated datacenter is illustrated in Figure~\ref{fig:dc}.
 % A \dis comprises standalone hardware “blades” for each resource type, %including CPUs, memory, storage, and network interfaces as well as specialized components (GPUs, various ASIC accelerators, etc.). Those resource blades are
@@ -60,9 +55,7 @@ In general, disaggregation suggests that each blade is comprised of a particular
 CPU-to-CPU cache coherence traffic does not hit the network fabric.
 This assumption is necessary because an external network fabric is unlikely to support the latency and bandwidth requirements for inter-CPU cache coherence (Table~\ref{tab:tech}).
 
-\cut{
-{\bf Virtual Machine abstraction} to aggregate slices of resources required for computing tasks.
-} 
+
 
 
 \paragraphb{(3) Resource Virtualization}
@@ -76,10 +69,7 @@ The disaggregated memory blade prototyped by Lim \etal~\cite{ddcHwDesign1} inclu
 Corresponding to their assumed scope of disaggregation, existing prototypes assume a different network architecture for within the rack(s) that form a unit of disaggregation vs. between such racks. To our knowledge, all existing \dis prototypes use specialized -- even proprietary~\cite{seamicro,huawei,rsa} -- network technologies and protocols within a disaggregated rack(s). For example, SeaMicro uses a proprietary Torus-based topology and routing protocol within its disaggregated system; Huawei propose a PCIe-based fabric~\cite{huawei1}; Firebox assumes an intra-Firebox network of 1Tbps Silicon photonics links interconnected by high-radix switches~\cite{firebox,vladimir}; and Intel's RSA likewise explores the use of Silicon photonics links and switches. 
 
 
-\cut{
-	{\bf Specialized Intra-rack network fabric} that use non-commodity components (\eg, Silicon photonics or PCIe links) and protocols, with a clear separation from inter-rack network fabric that comprises of commodity components and legacy protocols.
-}
-%\end{enumerate}
+
 
 
 %\vspace{-0.05in}
@@ -87,9 +77,7 @@ Corresponding to their assumed scope of disaggregation, existing prototypes assu
 %\vspace{-0.05in}
 \label{ssec:hardware}
 
-\cut{
-We start by outlining the hardware design we assume for \dis; our assumptions follow previous studies and existing disaggregated prototypes~\cite{ddcHwDesign1, ddcHwDesign2, ddcHwDesign3, rsa, hptm, fdr, sonuma, firebox}. We refer the reader to~\cite{ddcHwDesign1, ddcHwDesign2, ddcHwDesign3} for detailed hardware designs.% for disaggregated blades. 
-}
+
 
 In our study, we both borrow from  as well as critically explore the design choices made by existing hardware prototypes. Specifically, from our discussion in \S\ref{ssec:prototype}, we adopt the following assumptions: (1) partial CPU-memory disaggregation (i.e., each CPU blade retains some amount of local memory),  (2) cache coherence limited to a single CPU blade, and (3) resource virtualization. 
 While we assume that partial CPU-memory disaggregation will be the norm, we go a step further and evaluate how the amount of local memory impacts \emph{network} requirements in terms of network bandwidth and latency, and transport-layer flow completion times.
@@ -106,13 +94,6 @@ Second, these choices are likely to complicate or delay the deployment of \dis. 
 Hence, once again, rather than assume change is necessary, we wanted to rigorously evaluate the possibility  of maintaining a uniform ``flat'' network architecture based on existing commodity components as advocated in prior work~\cite{el-fares,vl2,greenberg-costs}. 
 
 
-\cut{ 
-study complements these prototypes by critically exploring several design aspects (\#1, \#4): (i) the impact of CPU-memory disaggregation on application-level performance; (ii) the bandwidth and latency requirements for maintaining application-level performance compared to traditional server-centric architectures; and in particular, the need for specialized network interconnects; and (iii) the possibility of designing a ``flat'' network architecture for resource disaggregated datacenters with disaggregation at the datacenter scale. 
-
-
-And as we shall see, our study shows that several assumptions implicit in the design of these early prototypes may not be necessary and that, for current workloads, resource disaggregation can be decoupled with the development of emerging network technologies.
-
-}
 
 
 

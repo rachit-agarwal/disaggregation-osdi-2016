@@ -9,7 +9,7 @@ Despite the aforementioned efforts towards and benefits of resource disaggregati
 \eat{This paper takes a first step towards addressing these questions. That is, rather than proposing a new network design, this paper systematically explores: (i) the (bandwidth and latency) requirements from the network fabric in resource disaggregated datacenters, and (ii) how well do existing (deployed or proposed) designs meet these requirements. \eat{We also use our findings (summarized below) to critically explore the assumptions and design decisions made in existing disaggregated prototypes and to identify gaps in existing network designs, and discuss how these observations can guide the design of network hardware and network stacks for resource disaggregated datacenters. \rc{$\gets$ Don't like this para much; sounds like a weak first preview of our work}
 }
 }
-We answer these questions in the context of {\em eight} diverse workloads spanning five popular open-source systems --- off-disk batch processing using Hadoop, in-memory batch processing using Spark, distributed graph processing using GraphLab, extremely optimized graph processing using Timely dataflow~\cite{timely-dataflow, timely-dataflow1}, point queries with memcached~\cite{memcached}, and an optimized in-memory SQL engine SparkSQL. Our key findings are:
+We answer these questions in the context of \rc{{\em nine}} diverse workloads spanning \rc{six} popular open-source systems --- off-disk batch processing using Hadoop, in-memory batch processing using Spark, distributed graph processing using GraphLab, extremely optimized graph processing using Timely dataflow~\cite{timely-dataflow, timely-dataflow1}, point queries with memcached~\cite{memcached} \rc{and HERD~\cite{herd}}, and an optimized in-memory SQL engine SparkSQL. Our key findings are:
 
 \begin{itemize}[leftmargin=*]
 \itemsep0em
@@ -27,7 +27,7 @@ Taken together, our study suggests that resource disaggregation with minimal per
 
 There are two important caveats to this.  First, while we may not need network changes, we will need changes in hosts, for which RDMA and NIC integration (for hardware) and pFabric or pHost (for transport protocols) are promising directions. Second, our point is not that new networking technologies are not worth pursuing but that the adoption of disaggregation \emph{need not be coupled} to the deployment of these new technologies (which, even today, remain far from mainstream). Instead, early efforts at disaggregation can begin with existing network technologies and the newer technologies can be incorporated as and when it makes sense from a performance, cost, and power standpoint.
 
-Before continuing, we note three limitations of our work. First, our results are based on eight specific workloads spanning five open-source systems with varying designs (off-disk versus in-memory, CPU versus bandwidth intensive, etc.); we leave to future work an evaluation of whether our results generalize to other systems and workloads. Second, we focus primarily on questions of network design for disaggregation, ignoring many systems-related questions (\eg, scheduler designs or software stack) modulo discussion on understanding latency bottlenecks. However, if the latter does turn out to be the more critical bottleneck for disaggregation, one might view our study as exploring whether the network can `get out of the way' (as often advocated~\cite{greenberg-sigcomm15}) even under disaggregation. Finally, our work looks ahead to an overall system that does not yet exist and hence we must make assumptions on certain fronts (e.g., hardware design and organization, data layout, etc.). We make what we believe are sensible choices, state these choices explicitly in \S\ref{sec:summary}, and to whatever extent possible, evaluate the sensitivity of these choices on our results. Nonetheless, our results are dependent on these choices and more experience is needed to confirm their validity.
+Before continuing, we note three limitations of our work. First, our results are based on \rc{nine} specific workloads spanning \rc{six} open-source systems with varying designs (off-disk versus in-memory, CPU versus bandwidth intensive, etc.); we leave to future work an evaluation of whether our results generalize to other systems and workloads \rc{, but note that even ``new-world''/highly optimized (HERD) systems have perf comparable to other systems we measure}. Second, we focus primarily on questions of network design for disaggregation, ignoring many systems-related questions (\eg, scheduler designs or software stack) modulo discussion on understanding latency bottlenecks. However, if the latter does turn out to be the more critical bottleneck for disaggregation, one might view our study as exploring whether the network can `get out of the way' (as often advocated~\cite{greenberg-sigcomm15}) even under disaggregation. Finally, our work looks ahead to an overall system that does not yet exist and hence we must make assumptions on certain fronts (e.g., hardware design and organization, data layout, etc.). We make what we believe are sensible choices, state these choices explicitly in \S\ref{sec:summary}, and to whatever extent possible, evaluate the sensitivity of these choices on our results. Nonetheless, our results are dependent on these choices and more experience is needed to confirm their validity.
 
 \begin{figure*}[!t]
 \centering 
@@ -44,54 +44,3 @@ Before continuing, we note three limitations of our work. First, our results are
 \label{fig:dc}
 \end{figure*}
 
-
-% This paper takes a first step towards understanding what network support is required for resource disaggregation. Rather than approach the question from a clean-slate, we adopt a workload-driven approach: we take five diverse workloads commonly found in today's datacenters -- batch processing jobs in Hadoop, point queries with memcached~\cite{memcached}, graph processing with Graphlab -- and address three questions in the context of these workloads: 
-%through a combination of emulations and simulation: 
-
-% \cut{
-% \vspace{-0.5em}
-% \begin{itemize}[leftmargin=*]
-% 	\itemsep0em
-% 	\item What network latency and bandwidth are required to avoid significantly degrading application-level performance relative to server-centric architectures? 
-% 	\item How (and why) does disaggregation change network traffic characteristics such as flow size distributions, communication patterns, traffic volumes, burstiness, and so forth?
-%     \item Can existing transport protocols meet the above requirements? 
-% \end{itemize}
-% }
-
-% \vspace{0.1in}
-% \noindent {\bf (1) Network performance requirements:} What network latency and bandwidth are required to avoid degrading application-level performance relative to server-centric architectures? 
-
-% \vspace{0.1in}
-% \noindent {\bf (2) Traffic workloads:} How (and why) does disaggregation change network traffic characteristics such as flow size distributions, communication patterns, traffic volumes, burstiness, and so forth?
-
-% \vspace{0.1in}
-% \noindent {\bf (3) L3/L4 protocols:} Can existing (deployed or proposed) network designs meet the above requirements?
-
-
-% \cut{ 
-% %SR: need to find a place to discuss this (but not here)
-% To date, there is no consensus on the granularity at which resource disaggregation will happen --- at the rack-scale, pod-scale, or an extreme of datacenter scale. Moreover, as briefly discussed above, resource disaggregation enables flexibility in choice of provisioning and sharing of resources adding to the degrees of freedom in design of \dis architecture. Given that our focus is on understanding the network support for \dis (rather than proposing a \dis architecture), we consider the new degrees of freedom --- scale of disaggregation, CPU-memory disaggregation, data placement and access, etc. --- as design parameters that may impact our study. 
-% } 
-
-% \vspace{0.5em}
-% \noindent Our key findings are as follows:
-% \vspace{-0.5em}
-% \begin{itemize}[leftmargin=*]
-% \itemsep0em
-% 	\item To maintain application performance comparable to current datacenters, a disaggregated datacenter must provide at least $40$Gbps bandwidth to end-points and an end-to-end latency of no more than $5-10\mu$s.
-% 	\item Traffic workloads in a disaggregated datacenter will differ significantly from existing workloads. Specifically, we observe: (a) up to 85\% less skew in flow size distributions, (b) a 100x reduction in the size of the longest (`elephant') flows, (c) up to a $75\times$ increase in overall traffic volume, and (d) a more uniform temporal distribution of traffic.
-% 	\item 
-	
-% \end{itemize} 
-	
-
-
-% \cut{
-% \noindent
-% \sr{Add a list of caveats/disclaimers as follows\ldots}
-% \begin{itemize} 
-% \item our results are based on the workloads we study; not comprehensive
-% \item we focus on net design, ignore many systems questions; may still well turn out that the latter matters more; in this sense one might view our study as seeing whether the network can `get out of the way’ \cite{};
-% \item because our study is forward looking, many aspects of the overall context we’re considering don’t exist yet so we must make assumptions - e.g., data layout, how resources blades are organized, etc.  We 
-% \end{itemize} 
-% }
