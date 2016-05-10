@@ -15,8 +15,8 @@ We previous identified an end-to-end latency target of 3-5us for \dis that we ar
 We were curious about the feasibility of realizing these latencies if we were to retain our 
 architecture from the previous section in which remote memory is accessed as a special swap device as this would provide a simple and transparent approach to utilizing remote memory. 
 
-We thus built a kernel space RDMA block device driver which serves as a swap device; i.e., the local CPU can now swap to remote memory instead of disk.
-We implemented the block device driver on a machine with Mellanox  4xFDR Infiniband card.
+We thus built a kernel space RDMA block device driver which serves as a swap device; \ie, the local CPU can now swap to remote memory instead of disk.
+We implemented the block device driver on a machine with Mellanox 4xFDR Infiniband card providing 54 Gbps bandwidth.
 We test the block device throughput using \textit{dd} with direct IO, and measure the request latency by instrumenting the driver code. 
 The end-to-end latency of our approach includes the RDMA request latency and the latency introduced by the kernel swap itself. We focus on each in turn. 
 
@@ -58,10 +58,8 @@ We found that convenient measurement tools such as \texttt{ftrace} and \texttt{p
 Thus, we wrap both the body of the \texttt{\_\_do\_page\_fault} function and the call to the \texttt{swapin\_readahead} function (which performs a swap from disk) in \texttt{ktime\_get} calls.  
 We then pack the result of the measurement for the \texttt{swapin\_readahead} function into the unused upper 16-bits of the return value of its caller, \texttt{do\_swap\_page}, which propagates the value up to \texttt{\_\_do\_page\_fault}. 
 
-Once we have measured the body of \texttt{\_\_do\_page\_fault}, we record both the latency of the whole \texttt{\_\_do\_page\_fault} routine, as well as the time spent in
-\texttt{swapin\_readahead}. 
-We subtract these and average to find that the
-software overhead of swapping is 2.47 $\mu$s. 
+Once we have measured the body of \texttt{\_\_do\_page\_fault}, we record both the latency of the whole \texttt{\_\_do\_page\_fault} routine, as well as the time spent in \texttt{swapin\_readahead}. 
+We subtract these and average to find that the software overhead of swapping is 2.46 $\mu$s\footnote{The average \texttt{\_\_do\_page\_fault} time was 25.47 $\mu$s, and the average \texttt{swapin\_readahead} time was 23.01 $\mu$s}. 
 This number is a lower-bound on the software overhead of the handler, because we assume that all of \texttt{swapin\_readahead} is a ``disk access''.% (we cannot neatly instrument inside \texttt{swapin\_readahead} in the same manner since it returns a pointer).
 
 In combination with the above RDMA latencies, these early numbers suggest that a simple system design for low-latency access to remote memory could be realized. 

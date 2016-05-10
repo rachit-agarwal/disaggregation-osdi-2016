@@ -23,7 +23,7 @@
 \end{table}
 
 Figure~\ref{fig:dc} illustrates the high-level idea behind a disaggregated datacenter.
-A \dis comprises standalone hardware ``blades'' for each resource type,  interconnected by a network fabric.
+A \dis comprises of standalone hardware ``blades'' for each resource type,  interconnected by a network fabric.
 Multiple prototypes of disaggregated hardware already exist --- Intel RSA~\cite{rsa}, HP ``the machine''~\cite{hptm}, Facebook's disaggregated rack~\cite{fdr}, Huawei's DC3.0~\cite{huawei}, and SeaMicro~\cite{seamicro}, as well as research prototypes like Firebox~\cite{firebox}, soNUMA~\cite{sonuma}, and memory blades~\cite{ddcHwDesign1}. 
 Many of these systems are proprietary and/or in the early stages of development; nonetheless, in our study we draw from what information is publicly available to both borrow from and critically explore the design choices made by existing hardware prototypes.
 
@@ -51,7 +51,7 @@ Each resource blade must support virtualization of its resources; this is necess
 Virtualization of IO resources is widely available even today: many IO device controllers now support virtualization via PCIe, SR-IOV, or MR-IOV features~\cite{sriov} and the same can be leveraged to virtualize IO resources in \dis.
 The disaggregated memory blade prototyped by Lim \etal~\cite{ddcHwDesign1} includes a controller ASIC on each blade that implements address translation between a remote CPU's view of its address space and the addressing used internally within the blade. Other research efforts assume similar designs. We note that while the implementation of such blades may require some additional new hardware, it requires no change to existing components such as CPUs, memory modules, or storage devices themselves.	
 
-\paragraphb{(4) Rack-scale disaggregation} Existing prototypes limit the scope of disaggregation to a very small number of racks. For example, Firebox~\cite{firebox} envisions a single system as spanning approximately three racks and assumes that the \emph{logical} aggregation and allocation of resources is similarly scoped; i.e., the resources allocated to a higher-level abstraction such as a VM or a container are selected from a single firebox. Similarly, the scope of disaggregation in Intel's RSA is a single rack~\cite{rsa}. In contrast, in a hypothetical datacenter-scale disaggregated system, resources assigned to (for example) a single VM could be selected from anywhere in the datacenter.  
+\paragraphb{(4) Scope of disaggregation} Existing prototypes limit the scope of disaggregation to a very small number of racks. For example, Firebox~\cite{firebox} envisions a single system as spanning approximately three racks and assumes that the \emph{logical} aggregation and allocation of resources is similarly scoped; i.e., the resources allocated to a higher-level abstraction such as a VM or a container are selected from a single firebox. Similarly, the scope of disaggregation in Intel's RSA is a single rack~\cite{rsa}. In contrast, in a hypothetical datacenter-scale disaggregated system, resources assigned to (for example) a single VM could be selected from anywhere in the datacenter.  
 %
 
 %\begin{wrapfigure}{R}{0.6\textwidth}
@@ -83,7 +83,7 @@ The disaggregated memory blade prototyped by Lim \etal~\cite{ddcHwDesign1} inclu
 %\end{wrapfigure}
 %
 
-\paragraphb{(5) Specialized network designs} 
+\paragraphb{(5) Network designs} 
 Corresponding to their assumed scope of disaggregation, existing prototypes assume a different network architecture for within the rack(s) that form a unit of disaggregation vs. between such racks. To our knowledge, all existing \dis prototypes use specialized -- even proprietary~\cite{seamicro,huawei,rsa} -- network technologies and protocols within a disaggregated rack(s). For example, SeaMicro uses a proprietary Torus-based topology and routing protocol within its disaggregated system; Huawei propose a PCIe-based fabric~\cite{huawei1}; Firebox assumes an intra-Firebox network of 1Tbps Silicon photonics links interconnected by high-radix switches~\cite{firebox,vladimir}; and Intel's RSA likewise explores the use of Silicon photonics links and switches. 
 
 Rather than simply accepting the last two design choices (rack-scale disaggregation and specialized network designs), we critically explore when and why these choices are necessary. Our rationale in this is twofold. 
@@ -113,7 +113,7 @@ We assume a `mixed' organization in which each rack hosts a mix of different typ
 This leads to a more uniform communication pattern which should simplify network design and also permits optimizations that aim to localize communication; e.g., co-locating a VM within a rack, which would not be possible with a segregated organization. 
 
 \paragraphb{Page-level remote memory access} 
-In traditional servers, the typical memory access between CPU and DRAM occurs in the unit of a cache-line size (64B in x86). In contrast, we assume that CPU blades access remote memory at the granularity of a page (4KB in x86), since this requires little or no modification to the virtual memory subsystems of hypervisors or operating systems, and is completely transparent to user-level applications. Moreover, page-level access has been shown to better exploit spatial locality in common memory access patterns~\cite{ddcHwDesign1}. 
+In traditional servers, the typical memory access between CPU and DRAM occurs in the unit of a cache-line size (64B in x86). In contrast, we assume that CPU blades access remote memory at the granularity of a page (4KB in x86), since page-level access has been shown to better exploit spatial locality in common memory access patterns~\cite{ddcHwDesign1}. Moreover, this requires little or no modification to the virtual memory subsystems of hypervisors or operating systems, and is completely transparent to user-level applications. 
 % the following is not true, page-level access is more efficient
 \cut{
 Note that this assumption constitutes a bad-case scenario for our study since it significantly increases the amount of data read per memory access (and hence, latency for transferring this larger amount of data across the network) as well as the total traffic volume.

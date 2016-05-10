@@ -151,18 +151,29 @@ As expected, we see that shark applications are more sensitive to the amount of 
 %In contrast, dolphin applications are far less sensitive to the amount of local memory. 
 In all cases, increasing the amount of local memory beyond $40\%$ has little to no impact on performance degradation.
 
+
+
+\paragraphb{Understanding (and extrapolating from) our results} 
+One might ask \emph{why} we see the above requirements -- i.e., what characteristic of the applications that we evaluate led to the specific bandwidth and latency requirements we report? An understanding of these characteristics could also allow us to generalize our findings to other applications. 
+
+%The results in Figure~\ref{fig:latb} lead to two interesting questions. First, what differentiates the dolphin applications from shark applications, and causes the variation in results across applications within a class? Second, how should one estimate the performance degradation for a new application and workload?
+
+We partially answer this question using Figure~\ref{fig:bandwidths11}, which plots the performance degradation of the above nine workloads against their swap and memory bandwidth{\footnote{We use Intel's Performance Counter Monitor software~\cite{intel-mem-count} to read the uncore performance counters that measure the number of bytes written to and read from the integrated memory controller on each CPU. We confirmed using benchmarks designed to saturate memory bandwidth~\cite{mem-band-bench} that we could observe memory bandwidth utilization numbers approaching the reported theoretical maximum. As further validation, we verified that our Spark SQL measurement is consistent with prior work~\cite{georgeporter}.}}. Figure~\ref{fig:swapband} and~\ref{fig:memband} show that the performance degradation of applications is strongly correlated with the swap and the memory bandwidth utilized by the application. The clear correlation with swap bandwidth is to be expected; however, we see that the overall memory bandwidth use is also well correlated with the resultant degradation. This suggests that an application's memory bandwidth requirements might serve as a rough indicator of its expected degradation under disaggregation: this is convenient as memory bandwidth is easily measured with requiring any of 
+
+one way to generalize our results to new application s
+
+The results from Figure~\ref{fig:bandwidths11} also suggest a way to generalize our results to new applications and workloads. Specifically, one can measure the swap bandwidth \rc{note that it's easier to measure memory bandwidth?} and the overall memory bandwidth for a new application and extrapolate from the results in Figure~\ref{fig:bandwidths11} to obtain a rough estimate on performance degradation for the new application and/or workload.
+
+rather intuitive, the difference between the two figures suggests that the performance degradation also depends on ``locality'', that is, the distribution of data accesses across the range of memory addresses. Measuring these access patterns and other contributing factors to performance degradation is an interesting avenue of future research.
+
+
+
+
+
 \paragraphb{Summary of results} 
 In summary, supporting memory disaggregation while maintaining application-level performance within reasonable bounds imposes certain requirements on the network in terms of the end-to-end latency and bandwidth it must provide. Moreover, these requirements are closely related to the amount of local memory available to CPU blades. Table~\ref{tab:rmem} summarizes these requirements for the applications we studied. We specifically investigate a few combinations of network latency, bandwidth, and the amount of local memory needed to maintain a performance degradation under 5\%. 
 We highlight these design points because they represent what we consider to be sweet spots in achievable targets both for the amount of local memory and for network requirements, as we discuss next.
 
-\rqc{
-\paragraphb{Other applications} 
-The results in Figure~\ref{fig:latb} lead to two interesting questions. First, what differentiates the dolphin applications from shark applications, and causes the variation in results across applications within a class? Second, how should one estimate the performance degradation for a new application and workload?
-
-We partially answer these questions using Figure~\ref{fig:bandwidths11}, which plots the performance degradation of the above nine workloads against their swap and memory bandwidth{\footnote{\rqc{We performed these measurements using Intel's Performance Counter Monitor software~\cite{intel-mem-count} to read the uncore performance counters in each node in our local cluster, which reflects the number of bytes written to and read from the integrated memory controller on each CPU. We confirmed using benchmarks designed to saturate memory bandwidth~\cite{mem-band-bench} that we could observe memory bandwidth utilization numbers approaching the reported theoretical maximum. As further validation, we verified that our Spark SQL measurement is consistent with prior work~\cite{georgeporter}.}}}. Figure~\ref{fig:swapband} and~\ref{fig:memband} show that the performance degradation of applications is strongly correlated with the swap and the memory bandwidth utilized by the application. While the correlation with swap bandwidth is rather intuitive, the difference between the two figures suggests that the performance degradation also depends on ``locality'', that is, the distribution of data accesses across the range of memory addresses. Measuring these access patterns and other contributing factors to performance degradation is an interesting avenue of future research.
-
-The results from Figure~\ref{fig:bandwidths11} also suggest a way to generalize our results to new applications and workloads. Specifically, one can measure the swap bandwidth \rc{note that it's easier to measure memory bandwidth?} and the overall memory bandwidth for a new application and extrapolate from the results in Figure~\ref{fig:bandwidths11} to obtain a rough estimate on performance degradation for the new application and/or workload.
-}
 
 %Next, we examine the feasibility of meeting the network requirements.
 %
