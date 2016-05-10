@@ -1,0 +1,27 @@
+
+\vspace{-0.1in}
+\section{Related Work and Discussion}
+\label{sec:discussion}
+\vspace{-0.05in}
+
+As mentioned earlier, there are many recent and ongoing efforts to prototype disaggregated hardware. We discussed the salient features of these efforts inline throughout this paper and hence we only briefly elaborate on them here. 
+
+Lim \etal~\cite{ddcHwDesign1, ddcHwDesign2} discuss the trend of growing peak compute-to-memory ratio, warning of the ``memory capacity wall'' and prototype a disaggregated memory blade. Their results demonstrate that memory disaggregation is feasible and can even provide a 10x performance improvement in memory constrained environments. As noted earlier, our study focuses on the (for us) worst-case scenario where applications are not memory constrained in the non-disaggregated scenario and hence the potential performance degradation due to disaggregation is high. For the same reason, we did not consider redesigning applications to exploit the plentiful remote memory available in \dis \rc{ other than the brief discussion in \S\ref{sec:improved}}.
+
+Sudan \etal~\cite{ddcHwDesign3} use an ASIC based interconnect fabric to build a virtualized I/O system for better resource sharing. However, these interconnects are designed for their specific context; the authors neither discuss network support for disaggregation more broadly nor consider the possibility of leveraging known datacenter network technologies to enable disaggregation.
+
+Firebox~\cite{firebox} proposes a holistic architecture redesign of datacenter racks to include $1$Tbps silicon phonics links, high-radix switches, remote nonvolatile memory, and System-on-Chips (SoCs). Theia~\cite{theia} proposes a new network topology that interconnects SoCs at high density. Huawei's DC3.0 (NUWA) system uses a proprietary PCIe-based interconnect. R2C2~\cite{r2c2} proposes new topologies, routing and congestion control designs for rack-scale disaggregation.
+None of these efforts evaluate network requirements based on existing workloads as we do, nor do they evaluate the effectiveness of existing network designs in supporting disaggregation, or the possibility of disaggregating at scale.
+
+%Overall, we find that related work confirms our prediction that sub-$5\mu$s latencies are feasible in the near future. 
+
+In an early position paper, Han \etal~\cite{hotnets} measure -- as we do -- the impact of remote memory access latency on application-level performance within a single machine. Our work extends this  understanding to a larger set of workloads and concludes with more stringent requirements on latency and bandwidth than Han \etal do, due to our consideration of shark applications. In addition, we use simulation and emulation to study the impact of queueing delay and transport designs which further raises the bar on our target network performance.
+
+%understanding along the new network-oriented design parameters of latency, bandwidth, and transport.Furthermore, our evaluation includes evaluation of additional applications and runs on a cluster of machines ``in the wild,'' measuring realistic scenarios which may have been hidden in a single-machine setting. 
+
+%\paragraphb{Low Latency}
+Multiple recent efforts~\cite{farm,mica,herd,ramcloud} aim to reduce the latency in networked applications through techniques that bypass the kernel networking stack, and so forth. %for significant latency improvements with Infiniband RDMA and direct NIC access. 
+%Looking forward, CPU-NIC integration, in which the OS kernel and device driver are more directly involved in the low-level operation of the NIC, is on the Simia
+Similarly efforts toward NIC integration by CPU architects~\cite{cpu-nic} promise to enable even further latency-saving optimizations. As we note in \S\ref{ssec:rtt}, such efforts are crucial enablers in meeting our latency targets. 
+
+

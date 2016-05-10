@@ -3,15 +3,15 @@
 \label{sec:future}
 \vspace{-0.05in}
 
-So far, we used emulation and simulation to evaluate the minimum network requirements for \dis disaggregation, with a focus on minimizing degradation in application performance. 
-This opens two directions for future work that we briefly investigate here: (1) demonstrating an end-to-end system implementation of remote memory access that meets our latency targets, and (2) investigating programming models that actively exploit disaggregation to \emph{improve} performance.
-Our results in this section are merely intended to demonstrate the potential for realizing positive results to the above questions: each topic merits an in-depth exploration that is out of scope for this paper.
+So far, we used emulation and simulation to evaluate the minimum network requirements for  disaggregation.%, with a focus on minimizing degradation in application performance. 
+This opens two directions for future work: (1) demonstrating an end-to-end system implementation of remote memory access that meets our latency targets, and (2) investigating programming models that actively exploit disaggregation to \emph{improve} performance.
+We present early results investigating the above with the intent of demonstrating the potential for realizing positive results to the above questions: each topic merits an in-depth exploration that is out of scope for this paper.
 
 
 \vspace{-0.1in}
 \subsection{Implementing remote memory access}
 \vspace{-0.05in}
-We previous identified an end-to-end latency target of 3-5us for \dis and argued for the use of  RDMA to meet this target. The (promising) RDMA latencies we assumed in \S\ref{sec:existing} were based on measurements reported by native RDMA-based applications. 
+We previous identified an end-to-end latency target of 3-5us for \dis that we argued could be met with RDMA. The (promising) RDMA latencies in \S\ref{sec:existing} are as reported by native RDMA-based applications. 
 We were curious about the feasibility of realizing these latencies if we were to retain our 
 architecture from the previous section in which remote memory is accessed as a special swap device as this would provide a simple and transparent approach to utilizing remote memory. 
 
@@ -20,10 +20,10 @@ We implemented the block device driver on a machine with Mellanox  4xFDR Infinib
 We test the block device throughput using \textit{dd} with direct IO, and measure the request latency by instrumenting the driver code. 
 The end-to-end latency of our approach includes the RDMA request latency and the latency introduced by the kernel swap itself. We focus on each in turn. 
 
-\paragraph{RDMA request latency.} A few optimizations were necessary to improve RDMA performance in our context. First, we batch block requests to be sent to the RDMA NIC and the driver waits for all the requests to return before notifying the upper layer: this gave a block device throughput of only 0.8GB/s and latency around 4-16us.
-Next, we observed that many block requests have contiguous addresses and hence merge these requests into a single large request: this improved throughput to 2.6GB/s (a ~3x improvement).
-Finally, we improved performance by issuing RDMA requests asynchronously. We created a data structure to keep track of all outgoing requests and notify the upper layer immediately for each completed request: this improves the throughput to 3.3GB/s which is as high as a local RamFS, and reduces the request latency to 3-4us (Table \ref{tab:rdma_latency}). 
-This latency is within 2x of request latencies reported by native RDMA applications which we view as encouraging given the simplicity of the design and that additional optimizations are likely possible.
+\paragraph{RDMA request latency.} A few optimizations were necessary to improve RDMA performance in our context. First, we \emph{batch} block requests sent to the RDMA NIC and the driver waits for all the requests to return before notifying the upper layer: this gave a block device throughput of only 0.8GB/s and latency around 4-16us.
+Next, we \emph{merge} requests with contiguous addresses into a single large request: this improved throughput to 2.6GB/s (a ~3x improvement).
+Finally, we allow \emph{asynchronous} RDMA requests: we created a data structure to keep track of outgoing requests and notify the upper layer immediately for each completed request; this improves throughput to 3.3GB/s which is as high as a local RamFS, and reduces the request latency to 3-4us (Table \ref{tab:rdma_latency}). 
+This latency is within 2x of latencies reported by native RDMA applications which we view as encouraging given the simplicity of the design and that additional optimizations are likely possible.
 
 \begin{table}[t]
     \centering
@@ -37,10 +37,6 @@ This latency is within 2x of request latencies reported by native RDMA applicati
     \label{tab:rdma_latency}
 \end{table}
 
-In current non-NUMA architecture, Linux Kernel only launches one \textit{kswapd} to swap out least recently used pages. 
-This could be a bottleneck for apps that heavily use remote memory.
-We enable the NUMA\_EMU feature in Linux kernel, which partitions the memory into several regions, and each memory region gets its own \textit{kswapd}. 
-This improves the throughput of swapping out memory pages.
 
 
 \eat{
@@ -64,8 +60,8 @@ introducedunacceptable overhead for our purposes.
 Instead, we took advantage of the fact that the
 \texttt{handle\_mm\_fault} function called by the page fault handler (and which
 eventually handles swaps) never utilizes the upper 16 bits of its 32 bit return
-value (as evidenced by the \texttt{VM\_FAULT\_*} macros in the \texttt{mm.h}
-header). Thus, we wrap both the body of the \texttt{\_\_do\_page\_fault} function and the
+value.% (as evidenced by the \texttt{VM\_FAULT\_*} macros in the \texttt{mm.h} header). 
+Thus, we wrap both the body of the \texttt{\_\_do\_page\_fault} function and the
 call to the \texttt{swapin\_readahead} function (which performs a swap from
 disk) in ktime\_get calls.  We then pack the result of the measurement for the
 swapin\_readahead function into the upper 16-bits of its caller,
@@ -77,13 +73,54 @@ Once we have measured the body of
 \texttt{swapin\_readahead}. We subtract these and average to find that the
 software overhead of page fault handler is 2.47 $\mu$s. This
 number is a lower-bound on the software overhead of the handler, because we
-assume that all of \texttt{swapin\_readahead} is a ``disk access'' (we cannot neatly instrument inside \texttt{swapin\_readahead} in the same manner since it returns a pointer).
+assume that all of \texttt{swapin\_readahead} is a ``disk access''.% (we cannot neatly instrument inside \texttt{swapin\_readahead} in the same manner since it returns a pointer).
 
-In combination with the RDMA request latencies, we find that a system implementation  
-of 
+Thus, in combination with the above RDMA latencies, these early numbers suggest that a simple system design for low-latency access to remote memory could be realized. 
+
+\eat{ 
+
+, there is likely room for optimization: in current non-NUMA architectures, the Linux Kernel only launches one \textit{kswapd} to swap out least recently used pages which could be a bottleneck for 
+This could be a bottleneck for apps that heavily use remote memory.
+We enable the NUMA\_EMU feature in Linux kernel, which partitions the memory into several regions, and each memory region gets its own \textit{kswapd}. 
+This improves the throughput of swapping out memory pages.
+}
+
+
 
 %Overall, our measurement code introduces a very small number of bitwise
 %operations (ANDs, ORs, shifts), one integer subtraction, and four calls to
 %\texttt{ktime\_get} into the handler, which together have a negligible impact on
 %measurements.
+\subsection{Improved performance via disaggregation}
+%Our study so far has focused on characterizing the network requirements for \dis that would lead to little or no performance degradation in existing applications. However,
+In the longer term, one might expect to re-architect applications to actively exploit disaggregation for improved performance.
+One promising direction is for applications to exploit the availability of low-latency access to large pools of remote memory~\cite{ddcHwDesign1}.
+% cite hotnets, reiss??
 
+To estimate the potential benefits of this approach, we conduct an experiment similar to COST~\cite{cost}.
+%to show that applications adapted to disaggregated environment can outperform traditional server centric ones.
+To model an application running in a \dis, we setup a virtual machine with 4 cores and 2GB of memory. 
+The server is capable of accessing an ``infinitely'' large remote memory pool by swapping to an RDMA-backed block device. 
+%This is considered as a simulation to running apps in \dis.
+We run Pagerank and Connected Components using COST, a single-thread graph compute engine over three large graph datasets.
+COST mmaps the input file, so we store the input files on another RDMA-backed block device.
+We evaluate two cases under server centric architecture.
+First, we setup a server with 4 cores and 8GB of local memory, which is 4x larger than the \dis case, and an ``infinitely'' large local SSD swap.
+Second, we evaluate GraphX using a 16-node m2.4xlarge cluster on EC2, representing the scaling out approach in current server centric architecture.
+Figure \ref{fig:benefit} shows the application runtime of COST-DDC, COST-SSD and GraphX-Server Centric.
+For most of the case, COST-DDC is 1.48 to 3.04 times faster than GraphX-Server Centric, except Pagerank on UK-2007-5 dataset. 
+
+
+
+
+Another promising direction for improving performance is through better resource utilization. As argued in~\cite{hotnets, ddcHwDesign1}, CPU-to-memory utilization for tasks in today’s datacenters varies by three orders of magnitude across tasks; by `bin packing' on a much larger scale, \dis
+
+\dis, via statistical multiplexing, enables significantly better resource utilization compared to today's datacenters.}}; and (2)
+
+
+\begin{figure}
+  \centering
+    \includegraphics[width = \columnwidth]{img/benefit_uk.eps} 
+  \caption{\small{Running COST in a simulated DDC. COST-DDC is 1.48 to 2.05 faster than GraphX-Server Centric except for one case. We use two datasets in our evaluation, UK-2007-05 (105m nodes, 3.7b edges), and Friendster (65m nodes, 1.8b edges)}}
+  \label{fig:benefit}
+\end{figure}

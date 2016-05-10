@@ -84,25 +84,7 @@ measurements.
 }
 
 \subsection{COST}
-\rqc{
-Our study so far has focused on characterizing the network requirements for \dis that would lead to little or no performance degradation in existing applications. However, in longer term, one might expect to re-architect existing applications to exploit \dis for improved performance. This is possible due to at least two factors enabled by \dis: (1) better resource utilization via resource multiplexing~\cite{hotnets}{\footnote{As argued in~\cite{hotnets, ddcHwDesign1}, CPU-to-memory utilization for tasks in today’s datacenters varies by three orders of magnitude across tasks. \dis, via statistical multiplexing, enables significantly better resource utilization compared to today's datacenters.}}; and (2) availability of higher density memory architectures~\cite{ddcHwDesign1}.
-}
-% cite hotnets, reiss??
 
-\rc{
-
-We conduct a similar experiment as COST~\cite{cost} to show that applications adapted to disaggregated environment can outperform traditional server centric ones.
-To simulate an application running in a \dis, we setup a virtual machine with 4 cores and 2GB of memory. 
-The server is capable of accessing an ``infinitely'' large remote memory pool by swapping to a RDMA-backed block device. 
-This is considered as a simulation to running apps in \dis.
-We run Pagerank and Connected Components using COST, a single thread graph compute engine over three large graph datasets.
-COST mmaps the input file, so we store the input files into another RDMA-backed block device.
-We evaluate two cases under server centric architecture.
-First, we setup a server with 4 cores and 8GB of local memory, which is 4x larger than the \dis case, and an ``infinitely'' large local SSD swap.
-Second, we evaluate GraphX using a 16-node m2.4xlarge cluster on EC2, representing the scaling out approach in current server centric architecture.
-Figure \ref{fig:benefit} shows the application runtime of COST-DDC, COST-SSD and GraphX-Server Centric.
-For most of the case, COST-DDC is 1.48 to 3.04 times faster than GraphX-Server Centric, except Pagerank on UK-2007-5 dataset. 
-}
 
 
 
