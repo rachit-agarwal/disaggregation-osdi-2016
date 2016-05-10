@@ -4,10 +4,10 @@
 %
 \label{sec:existing}
 %\vspace{-0.05in}
-Our evaluation so far ignored the impact of queueing delay on end-to-end latency and hence application performance; we remedy the omission in this section.
-The challenge is that queueing delay is a function of the overall network design, including: the traffic workload, network topology and routing, and the end-to-end transport protocol. Our evaluation focuses on existing proposals for transport protocols, with standard assumptions about the datacenter topology and routing. However, the input traffic workload in \dis will be very different from that in a server-centric datacenter and, to our knowledge, no models exist that characterize traffic in a \dis. 
+Our evaluation so far ignored the impact of queuing delay on end-to-end latency and hence application performance; we remedy the omission in this section.
+The challenge is that queuing delay is a function of the overall network design, including: the traffic workload, network topology and routing, and the end-to-end transport protocol. Our evaluation focuses on existing proposals for transport protocols, with standard assumptions about the datacenter topology and routing. However, the input traffic workload in \dis will be very different from that in a server-centric datacenter and, to our knowledge, no models exist that characterize traffic in a \dis. 
 
-We thus start by devising a methodology that extends our experimental setup to generate an application-driven input traffic workload (\S\ref{ssec:ssmethod-traffic}), then describe how we use this traffic model to evaluate the impact of queueing delay (\S\ref{ssec:ssmethod}). Finally, we present our results on: (i) how existing transport designs perform under \dis traffic workloads (\S\ref{ssec:nlp}), and (ii) how existing transport designs impact end-to-end application performance (\S\ref{ssec:alp}). To our knowledge, our results represent the first evaluation of transport protocols for \dis. 
+We thus start by devising a methodology that extends our experimental setup to generate an application-driven input traffic workload (\S\ref{ssec:ssmethod-traffic}), then describe how we use this traffic model to evaluate the impact of queuing delay (\S\ref{ssec:ssmethod}). Finally, we present our results on: (i) how existing transport designs perform under \dis traffic workloads (\S\ref{ssec:nlp}), and (ii) how existing transport designs impact end-to-end application performance (\S\ref{ssec:alp}). To our knowledge, our results represent the first evaluation of transport protocols for \dis. 
 
 %
 \eat{ 
@@ -71,7 +71,7 @@ Figure~\ref{fig:trafvol} plots a few characteristics of our resultant \dis traff
 }
 
 %\vspace{-0.1in}
-\subsection{Methodology: Queueing delay}
+\subsection{Methodology: Queuing delay}
 \label{ssec:ssmethod}
 %\vspace{-0.05in}
 We evaluate the use of existing network designs for \dis in two steps.
@@ -104,7 +104,7 @@ in their original papers; e.g. pFabric and pHost both report close-to-optimal sl
 On closer examination, we found that the higher slowdowns with disaggregation are a consequence of the differences in our traffic workloads (both earlier studies used heavy-tailed traffic workloads based on measurement 
 studies from existing datacenters). In our \dis workload, reflecting the 
 application-driven nature of our workload, we observe many flow arrivals that 
-appear very close in time (only observable on sub-10s of microsecond timescales), leading to high slowdowns for these flows. This effect is strongest in the case of the wordcount application which is why it suffers the highest slowdowns. 
+appear very close in time (only observable on sub-10s of microsecond timescales), leading to high slowdowns for these flows. This effect is strongest in the case of the Wordcount application which is why it suffers the highest slowdowns. 
 We observed similar results in our simulation of rack-scale disaggregation (graph omitted).
 %
 \eat{
@@ -127,10 +127,10 @@ We now use the pFabric FCTs obtained from the above simulations as the memory ac
 
 We measure the degradation in application performance that results from injecting remote memory access times drawn from the FCTs that pFabric achieves with 40Gbps links and with 100Gbps links, in each case considering both datacenter-wide and rack-scale disaggregation. As in \S\ref{sec:requirements}, we measure performance degradation compared to the baseline of performance without disaggregation (i.e., injecting zero latency). 
 
-In all cases, we find that the inclusion of queueing delay \emph{does} have a non-trivial impact on performance degradation at 40 Gbps -- typically increasing the performance degradation relative to the case of zero-queueing delay by between 2-3x, with an average performance degradation of 14\% with datacenter-scale disaggregation and 11\% with rack-scale disaggregation. 
+In all cases, we find that the inclusion of queuing delay \emph{does} have a non-trivial impact on performance degradation at 40 Gbps -- typically increasing the performance degradation relative to the case of zero-queuing delay by between 2-3x, with an average performance degradation of 14\% with datacenter-scale disaggregation and 11\% with rack-scale disaggregation. 
 
 With 100Gbps links, we see (in Figure~\ref{fig:appfabric100}) that the performance degradation ranges between 1-8.5\% on average with datacenter scale disaggregation, and containment to a rack lowers the degradation to between 0.4-3.5\% on average.
-This leads us to conclude that 100Gbps links are both required and sufficient to contain the performance impact of queueing delay.
+This leads us to conclude that 100Gbps links are both required and sufficient to contain the performance impact of queuing delay.
 %
 %
 \begin{figure}
