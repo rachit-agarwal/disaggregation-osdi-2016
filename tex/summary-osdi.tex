@@ -53,6 +53,8 @@ The disaggregated memory blade prototyped by Lim \etal~\cite{ddcHwDesign1} inclu
 
 \paragraphb{(4) Rack-scale disaggregation} Existing prototypes limit the scope of disaggregation to a very small number of racks. For example, Firebox~\cite{firebox} envisions a single system as spanning approximately three racks and assumes that the \emph{logical} aggregation and allocation of resources is similarly scoped; i.e., the resources allocated to a higher-level abstraction such as a VM or a container are selected from a single firebox. Similarly, the scope of disaggregation in Intel's RSA is a single rack~\cite{rsa}. In contrast, in a hypothetical datacenter-scale disaggregated system, resources assigned to (for example) a single VM could be selected from anywhere in the datacenter.  
 %
+
+\begin{wrapfigure}{r}{0.8\textwidth}
 \begin{table*}[t]
   \centering
   \small
@@ -75,10 +77,10 @@ The disaggregated memory blade prototyped by Lim \etal~\cite{ddcHwDesign1} inclu
 
     \hline
   \end{tabular}
-  \vspace{0.1in}
   \caption{\small{Applications, workloads, systems and datasets used in our study.}}
   \label{tab:workloads}
 \end{table*}
+%\end{wrapfigure}
 %
 
 \paragraphb{(5) Specialized network designs} 
@@ -110,8 +112,8 @@ We assume that resources are organized in racks as in today's datacenters.
 We assume a `mixed' organization in which each rack hosts a mix of different types of resource blades, as opposed to a `segregated' organization in which a rack is populated with a single type of resource (e.g., all memory blades). 
 This leads to a more uniform communication pattern which should simplify network design and also permits optimizations that aim to localize communication; e.g., co-locating a VM within a rack, which would not be possible with a segregated organization. 
 
-\paragraphb{Page-level remote memory access} \rc{reviewer: why not cache-line access}
-In traditional servers, the typical memory access between CPU and DRAM occurs in the unit of a cache-line size (64B in x86). In contrast, we assume that CPU blades access remote memory at the granularity of a page (4KB in x86), since this requires little or no modification to the virtual memory subsystems of hypervisors or operating systems, and is completely transparent to user-level applications. \rqc{Moreover, page-level access has been shown to better exploit spatial locality in common memory access patterns~\cite{ddcHwDesign1}}. 
+\paragraphb{Page-level remote memory access} 
+In traditional servers, the typical memory access between CPU and DRAM occurs in the unit of a cache-line size (64B in x86). In contrast, we assume that CPU blades access remote memory at the granularity of a page (4KB in x86), since this requires little or no modification to the virtual memory subsystems of hypervisors or operating systems, and is completely transparent to user-level applications. Moreover, page-level access has been shown to better exploit spatial locality in common memory access patterns~\cite{ddcHwDesign1}. 
 % the following is not true, page-level access is more efficient
 \cut{
 Note that this assumption constitutes a bad-case scenario for our study since it significantly increases the amount of data read per memory access (and hence, latency for transferring this larger amount of data across the network) as well as the total traffic volume.

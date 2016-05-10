@@ -40,17 +40,24 @@ We use workloads from diverse applications running on real-world and benchmark d
 \sr{Old short-and-sweet text}
 We take these applications as is rather than seek to optimize them for \dis; this represents a worst-case for the network, as \dis-driven application modifications could lessen the network requirements. 
 }
-\sr{New long-and-gory text}
+%\sr{New long-and-gory text}
 We elaborate briefly on our choice to take these applications as is, rather than seek to optimize them for \dis. Our focus in this paper is on understanding whether and why networking might gate the deployment of \dis.  For this, we are interested in the degradation that applications might suffer if they were to run in \dis. We thus compare the performance of an application in a server-centric architecture to its performance in the disaggregated context we consider here (with its level of bandwidth and local memory). This would be strictly worse than if we compared to the application's performance if it had been rewritten for this disaggregated context. Thus, legacy (i.e., server-centric) applications represent the worst-case in terms of potential degradation and give us a lower bound on the network requirements needed for disaggregation (it might be that rewritten applications could make due with lower bandwidths). Clearly, if new networking technologies exceed this lower bound, then all applications (legacy and `native' \dis) will benefit. Similarly, new programming models designed to exploit disaggregation can only improve the performance of all applications. The question of how to achieve improved performance through new technologies and programming models is an interesting one but beyond the scope of our effort and hence one we leave to future work. 
 
 
 %These workloads constitute a wide variety of application domains including off-disk batch processing (Hadoop), in-memory batch processing (Spark), graph processing (GraphLab) and point queries (memcached).
 
 %
+\paragraphb{Testbed}
+Each application operates on $\sim125$GB of data equally distributed across an Amazon EC2 cluster comprising of $5$ m3.2xlarge servers. Each of these servers has $8$ vCPUs, $30$GB main memory, $2 \times 80$GB SSD drives and a $1$Gbps access link bandwidth.
+We enabled EC2's Virtual Private Network (VPC~\cite{vpc}) capability in our cluster to ensure no interference with other Amazon EC2 instances. 
+ 
+We verified that m3.2xlarge instances' $1$Gbps access links were not a bottleneck to our experiment in two ways. 
+First, in all cases where the network approached full utilization, CPU was highly utilized, indicating that the CPU was not blocked on network calls.
+Next, we ran our testbed on c3.4xlarge instances with $2$Gbps access links (increased network bandwidth with roughly the same CPU). We verified that even with more bandwidth, all applications for which link utilization was high maintained high CPU utilization.
 \begin{figure}[t]
   \centering
     \includegraphics[width = \columnwidth]{img/fix_latency_vary_bw.eps} 
-  \caption{\small{Impact of network bandwidth on the results of Figure~\ref{fig:latb} for end-to-end latency fixed to $5\mu$s and local memory fixed to $25\%$. Beyond $40$Gbps, the network bandwidth has little or no impact on relative (disaggregated versus server-centric) application-level performance.}}
+  \caption{\small{Impact of network bandwidth on the results of Figure~\ref{fig:latb} for end-to-end latency fixed to $5\mu$s and local memory fixed to $25\%$.}}% Beyond $40$Gbps, the network bandwidth has little or no impact on relative (disaggregated versus server-centric) application-level performance.}}
   \label{fig:impbw}
 \end{figure}
 %
@@ -58,7 +65,7 @@ We elaborate briefly on our choice to take these applications as is, rather than
 \begin{figure}[t]
   \centering
     \includegraphics[width=\columnwidth]{img/fix_bw_vary_latency.eps} 
-  \caption{\small{Impact of network latency on the results of Figure~\ref{fig:latb} for bandwidth fixed to $40$Gbps and local memory fixed to $25\%$. Sharks are extremely sensitive to network latencies, while dolphins remains largely insensitive.}}
+  \caption{\small{Impact of network latency on the results of Figure~\ref{fig:latb} for bandwidth fixed to $40$Gbps and local memory fixed to $25\%$. }} %Sharks are extremely sensitive to network latencies, while dolphins remains largely insensitive.}}
   \label{fig:impl}
 \end{figure}
 %
@@ -66,7 +73,7 @@ We elaborate briefly on our choice to take these applications as is, rather than
 \begin{figure}[h]
   \centering
     \includegraphics[width=\columnwidth]{img/vary_remote_mem.eps} 
-  \caption{\small{Impact of ``local memory'' on the results of Figure~\ref{fig:latb} for end-to-end latency fixed to $5\mu$s and network bandwidth fixed to $40$Gbps. Local memory has significant impact on the performance of sharks and noticeable impact on dolphins (at least until $40\%$). Beyond $35\%$ local memory, both sharks and dolphins achieve performance within reasonable bounds. This could be reduced to $30\%$ for lower latency and/or higher bandwidth configurations (see Table~\ref{tab:rmem}).}}
+  \caption{\small{Impact of ``local memory'' on the results of Figure~\ref{fig:latb} for end-to-end latency fixed to $5\mu$s and network bandwidth $40$Gbps.}} %Local memory has significant impact on the performance of sharks and noticeable impact on dolphins (at least until $40\%$). Beyond $35\%$ local memory, both sharks and dolphins achieve performance within reasonable bounds. This could be reduced to $30\%$ for lower latency and/or higher bandwidth configurations (see Table~\ref{tab:rmem}).}}
   \label{fig:impb}
 \end{figure}
 %
@@ -80,18 +87,11 @@ We elaborate briefly on our choice to take these applications as is, rather than
     $5\mu$s, $40$Gbps & $35$\% & $20$\%\\\hline
     $3\mu$s, $100$Gbps & $30$\% & $15$\%\\\hline\hline
     \end{tabular}
-    \caption{Sharks require slightly higher local memory than dolphins to be able to achieve an average performance penalty of $5\%$ for various latency-bandwidth configurations.}
+    \caption{Sharks require slightly higher local memory than dolphins to achieve an average performance penalty under $5\%$ for various latency-bandwidth configurations.}
     \label{tab:rmem}
 \end{table}
 %
 
-\paragraphb{Testbed}
-Each application operates on $\sim125$GB of data equally distributed across an Amazon EC2 cluster comprising of $5$ m3.2xlarge servers. Each of these servers has $8$ vCPUs, $30$GB main memory, $2 \times 80$GB SSD drives and a $1$Gbps access link bandwidth.
-We enabled EC2's Virtual Private Network (VPC~\cite{vpc}) capability in our cluster to ensure no interference with other Amazon EC2 instances. 
- 
-We verified that m3.2xlarge instances' $1$Gbps access links were not a bottleneck to our experiment in two ways. 
-First, in all cases where the network approached full utilization, CPU was highly utilized, indicating that the CPU was not blocked on network calls.
-Next, we ran our testbed on c3.4xlarge instances with $2$Gbps access links (increased network bandwidth with roughly the same CPU). We verified that even with more bandwidth, all applications for which link utilization was high maintained high CPU utilization.
 
 %
 \begin{figure*}[t]
@@ -129,12 +129,11 @@ Figure~\ref{fig:latb} plots the performance degradation for each application und
 From Figure~\ref{fig:latb}, we see that our applications can be broadly divided into two categories based on the network latency and bandwidth needed to achieve a low performance penalty.
 For example, for the applications in Fig.~\ref{fig:latb} (top) --- Hadoop Wordcount, Hadoop Sort, Graphlab and Memcached --- a network with an end-to-end latency of $5\mu$s and bandwidth of $40$Gbps is sufficient to maintain an average performance penalty under 5\%. 
 In contrast, the applications in Fig.~\ref{fig:latb} (bottom) --- Spark Wordcount, Spark Sort, Timely, SparkSQL BDB, and HERD --- require network latencies of $3\mu$s and $40-100$Gbps bandwidth to maintain an average performance penalty under 8\%. We term the former applications {\em dolphins} and the latter {\em sharks} reflecting their more relaxed vs. demanding natures and examine the feasibility of meeting their respective requirements in \S\ref{ssec:rtt}.
-\rc{We found that Spark Streaming has a low memory footprint. As a result, its performance degradation is near zero in \dis, and we show it only in Figure~\ref{fig:bandwidths11}.}
+%\rc{We found that Spark Streaming has a low memory footprint. As a result, its performance degradation is near zero in \dis, and we show it only in Figure~\ref{fig:bandwidths11}.}
 
 \paragraphb{Sensitivity analysis}
 Next, we evaluate the sensitivity of application performance to network bandwidth and latency. Fig.~\ref{fig:impbw} plots the performance degradation under increasing network bandwidth assuming a fixed network latency of $5\mu$s while Fig.~\ref{fig:impl} plots degradation under increasing latency for a fixed bandwidth of $40$Gbps; in both cases, local memory is set at $25\%$ as before.
 %nd end-to-end latency to be  and varying the bandwidth from $10$Gbps to $100$Gbps (Figure~\ref{fig:impbw}). 
-
 We see that beyond $40$Gbps, increasing network bandwidth offers little improvement in application-level performance. 
 %
 \cut{ 
@@ -182,6 +181,7 @@ Overall, we conclude that \emph{it is possible to achieve resource disaggregatio
 %
 \begin{table*}[t]
   \centering
+  \small{
   \begin{tabular}{c|r|r|r|r|r|r}
 	\multirow{2}{*}
 	    {\bf Component     } & 
@@ -204,7 +204,7 @@ Overall, we conclude that \emph{it is possible to achieve resource disaggregatio
     {\bf Total} & {\bf $7.04\mu$s} & {$5.28\mu$s} & {$5.14\mu$s} & {$3.38\mu$s} & {\bf $4.14\mu$s} & {\bf $2.38\mu$s}\\\hline
 	\hline
   \end{tabular}
-  \vspace{0.1in}
+  }
   \caption{\small{Achievable round-trip latency (Total) and the breakdown into individual components that contribute to the round-trip latency (see discussion in \S\ref{ssec:rtt}) on a network with $40$Gbps access link bandwidth (one can further reduce the {\bf Total} by $0.5\mu$s using $100$Gbps access link bandwidth). The baseline denotes the latency achievable with existing network technology. The fractional part in each cell is the latency for one traversal of the corresponding component and the integral part is the number of traversal performed in one round-trip time (see discussion in \S\ref{ssec:rtt}).}}
   \label{tab:latency}
 \end{table*}
