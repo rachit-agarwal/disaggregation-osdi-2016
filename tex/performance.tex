@@ -1,6 +1,7 @@
+\vspace{-0.1in}
 \section{Network Designs for Disaggregation}
 \label{sec:existing}
-
+\vspace{-0.05in}
 Our evaluation so far has ignored the impact of queueing delay on end-to-end latency and hence application performance. We remedy the omission in this section.
 The challenge is that queueing delay is a function of the overall design of the network, including: the input traffic workload, the network topology and routing, and the end-to-end transport protocol. Our evaluation focuses on existing proposals for transport protocols, with standard assumptions about the datacenter topology and routing (described below). However, the input traffic workload in \dis will be very different from that in a server-centric datacenter and, to our knowledge, no models exist that characterize traffic in a \dis. 
 
@@ -30,10 +31,10 @@ We thus start by devising a methodology that extends our experimental setup to g
     \label{fig:trafvol}
 \end{figure*}
 %
-
+\vspace{-0.1in}
 \subsection{Methodology: \dis Traffic Workloads}
 \label{ssec:ssmethod-traffic}
-
+\vspace{-0.05in}
 %\paragraphb{Traces}
 Using our experimental setup from \S\ref{ssec:rmethod},%, including the applications, datasets, and EC2 cluster (with VPC enabled). 
 we collect three types of traces: 
@@ -85,12 +86,10 @@ Otherwise, the memory/disk access is assumed to have originated from the local C
 
 Figure~\ref{fig:trafvol} plots a few characteristics of our resultant \dis traffic workload alongside that in the corresponding non-disaggregated architecture. As expected, disaggregation significantly changes the nature of the traffic workload, pointing to the importance of our characterization effort.
 
-
-
-
+\vspace{-0.1in}
 \subsection{Methodology: Queueing delay}
 \label{ssec:ssmethod}
-
+\vspace{-0.05in}
 We evaluate the use of existing network designs for \dis in two steps.
 First, we evaluate how existing network designs fare under \dis traffic workloads. 
 For this, we consider a suite of state-of-the-art network designs and use simulation to evaluate their network-layer performance -- measured in terms of flow completion time (FCT) -- under the traffic workloads we generate as above.
@@ -332,10 +331,10 @@ The resulting injected load can be seen in Figure~\ref{fig:loadcdf}.
 
 
 
-
+\vspace{-0.1in}
 \subsection{Network-level performance}
 \label{ssec:nlp}
-
+\vspace{-0.05in}
 We evaluate the performance of our candidate transport protocols in terms of their  mean slowdown~\cite{pfabric}, which is computed as follows. The slowdown for a flow is computed by dividing the flow completion time achieved in simulation by the time that the flow would take to complete if it were alone in the network. The mean slowdown is then computed by averaging the slowdown over all flows.
 Figure~\ref{fig:phostp} plots the mean slowdown for our five candidate protocols, using $100$Gbps links (all other parameters are as in \S\ref{ssec:ssmethod}). 
 
@@ -355,9 +354,10 @@ disaggregation; i.e., a CPU blade's associated memory and disk blades are select
 its own rack. The results are shown in Figure~\ref{fig:phostp-rs}. We see that, with the exception of Fastpass, rack-scale disaggregation does not significantly alter the slowdown values. (Fastpass fares worse with rack-scale disaggregation because the centralized scheduler is not rack-local and hence the cost of contacting the scheduler is relatively greater.)
 However, one should not conclude from this that rack-scale containment is not useful because our slowdown metric masks differences in the \emph{absolute} FCT values. Instead, slowdown is useful primarily to compare across different transport protocol designs. The impact of these absolute FCT values is captured in our next experiments.
 
+\vspace{-0.1in}
 \subsection{Application-level performance}
 \label{ssec:alp}
-
+\vspace{-0.05in}
 We now use the FCTs obtained from the above simulations as the memory access times in our emulation methodology from \S\ref{sec:requirements}. We use the FCTs from pFabric as it achieves the best slowdowns over a range of test scenarios. 
 
 We measure the degradation in application performance that results from injecting remote memory access times drawn from the FCTs that pFabric achieves with 40Gbps links and with 100Gbps links, in each case considering both datacenter-wide and rack-scale disaggregation. As in \S\ref{sec:requirements}, we measure performance degradation compared to the baseline of performance without disaggregation (i.e., injecting zero latency). 
@@ -390,9 +390,9 @@ This leads us to conclude that 100Gbps links are both required and sufficient to
 \end{figure}
 %
 
-
-
+\vspace{-0.1in}
 \subsection{Low latency remote memory}
+\vspace{-0.05in}
 \rc{
 As we have established in the previously section, a DDC requires 100Gbps bandwidth and 3-5us end-to-end latency. 
 Current datacenter network usually has 20us network latency, and by our analysis, 5-7us of end-to-end latency is within reach. 

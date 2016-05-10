@@ -63,7 +63,7 @@ Figure~\ref{fig:latb} plots the performance degradation for each application und
 
 From Figure~\ref{fig:latb}, we see that our applications can be broadly divided into two categories based on the network latency and bandwidth needed to achieve a low performance penalty.
 For example, for the applications in Fig.~\ref{fig:latb} (top) --- Hadoop Wordcount, Hadoop Sort, Graphlab and Memcached --- a network with an end-to-end latency of $5\mu$s and bandwidth of $40$Gbps is sufficient to maintain an average performance penalty under 5\%. 
-In contrast, the applications in in Fig.~\ref{fig:latb} (bottom) --- Spark Wordcount, Spark Sort, Timely and SparkSQL BDB --- require network latencies of $3\mu$s and $40-100$Gbps bandwidth to maintain an average performance penalty under 8\%. We term the former applications {\em dolphins} and the latter {\em sharks} reflecting their more relaxed vs. demanding natures and examine the feasibility of meeting their respective requirements in \S\ref{ssec:rtt}.
+In contrast, the applications in in Fig.~\ref{fig:latb} (bottom) --- Spark Wordcount, Spark Sort, Timely, SparkSQL BDB, and HERD --- require network latencies of $3\mu$s and $40-100$Gbps bandwidth to maintain an average performance penalty under 8\%. We term the former applications {\em dolphins} and the latter {\em sharks} reflecting their more relaxed vs. demanding natures and examine the feasibility of meeting their respective requirements in \S\ref{ssec:rtt}.
 
 
 
@@ -79,7 +79,7 @@ This result is in sharp contrast with existing disaggregated hardware proposals 
 In contrast, performance --- particularly for shark applications --- is very sensitive to network latency; very low latencies ($3-5\mu$s) are needed to avoid non-trivial performance degradation.
 
 %
-\begin{figure}
+\begin{figure}[t]
   \centering
     \includegraphics[width = \columnwidth]{img/fix_latency_vary_bw.eps} 
   \caption{\small{Impact of network bandwidth on the results of Figure~\ref{fig:latb} for end-to-end latency fixed to $5\mu$s and local memory fixed to $25\%$. Beyond $40$Gbps, the network bandwidth has little or no impact on relative (disaggregated versus server-centric) application-level performance.}}
@@ -87,7 +87,7 @@ In contrast, performance --- particularly for shark applications --- is very sen
 \end{figure}
 %
 %
-\begin{figure}
+\begin{figure}[t]
   \centering
     \includegraphics[width=\columnwidth]{img/fix_bw_vary_latency.eps} 
   \caption{\small{Impact of network latency on the results of Figure~\ref{fig:latb} for bandwidth fixed to $40$Gbps and local memory fixed to $25\%$. Sharks are extremely sensitive to network latencies, while dolphins remains largely insensitive.}}

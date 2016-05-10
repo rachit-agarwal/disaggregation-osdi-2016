@@ -1,9 +1,36 @@
+\vspace{-0.1in}
+\section{Improved Application Performance in DDC}
+\vspace{-0.05in}
+\rqc{
+Our study so far has focused on characterizing the network requirements for \dis that would lead to little or no performance degradation in existing applications. However, in longer term, one might expect to re-architect existing applications to exploit \dis for improved performance. This is possible due to two factors enabled by \dis: (1) better resource utilization via resource multiplexing{\footnote{As argued in~\cite{hotnets, reiss}, }}; and (2) availability of higher density memory architectures~\cite{ddcHwDesign1}.
+}
+
+\rc{
+While most of the existing applications' performance does not degrade significantly in a DDC, we envision that applications could be rewritten to fully take advantage of disaggregation. 
+In COST~\cite{cost}, McSherry et. al. shows that current server centric architecture incurs high overhead to scale out.
+For applications such as distributed graph engines, the coordination and communication overhead is too substantial for them to benefit from parallelism.
+
+We conduct a similar experiment as COST~\cite{cost} to show that applications adapted to disaggregated environment can outperform traditional server centric ones.
+To simulate an application running in a DDC, we setup a virtual machine with 4 cores and 3GB of memory. 
+The server is capable of accessing an ``infinitely'' large remote memory pool by swapping to a RDMA-backed block device. 
+We run Pagerank and Connected Components using COST, a single thread graph compute engine over three large graph datasets.
+Since COST mmaps the input file, we store the input files into another RDMA-backed block device.
+For server centric architecture, we evaluate GraphX using a 16-node m2.4xlarge cluster on EC2. 
+Figure \ref{fig:benefit} shows the application runtime of COST-DDC and GraphX-Server Centric.
+For most of the case, COST-DDC is 1.48 to 3.04 times faster than GraphX-Server Centric, except Pagerank on UK-2007-5 dataset. 
+After talking to one of the author of GraphX, we discovered that the UK-2007-05 dataset has better partition property such that there are fewer vertices spanning machines, hence GraphX performs well. 
+We also evaluate the performance benefit of using remote memory over local SSD.
+From Figure ~\ref{fig:benefit}, swapping using RDMA is 1.06 to 2.15 times faster than its SSD counterpart. 
+}
+
+
+
+
+
+\vspace{-0.1in}
 \section{Related Work and Discussion}
 \label{sec:discussion}
-
-
-
-
+\vspace{-0.05in}
 
 As mentioned earlier, there are many recent and ongoing efforts to prototype disaggregated hardware. We discussed the salient features of these efforts inline throughout this paper and hence we only briefly elaborate on them here. 
 
@@ -40,28 +67,6 @@ Similarly efforts toward NIC integration by CPU architects~\cite{cpu-nic} promis
   \caption{\small{Running COST in a simulated DDC. COST-DDC is 1.48 to 3.04 faster than GraphX-Server Centric. We use three datasets in our evaluation, Twitter (4.17m nodes, 1.47b edges), UK-2007-05 (105m nodes, 3.7b edges), and Friendster (65m nodes, 1.8b edges)}}
   \label{fig:benefit}
 \end{figure}
-
-
-\subsection{Improve App Performance in DDC}
-\rc{
-While most of the existing applications' performance does not degrade significantly in a DDC, we envision that applications could be rewritten to fully take advantage of disaggregation. 
-In COST~\cite{cost}, McSherry et. al. shows that current server centric architecture incurs high overhead to scale out.
-For applications such as distributed graph engines, the coordination and communication overhead is too substantial for them to benefit from parallelism.
-
-We conduct a similar experiment as COST~\cite{cost} to show that applications adapted to disaggregated environment can outperform traditional server centric ones.
-To simulate an application running in a DDC, we setup a virtual machine with 4 cores and 3GB of memory. 
-The server is capable of accessing an ``infinitely'' large remote memory pool by swapping to a RDMA-backed block device. 
-We run Pagerank and Connected Components using COST, a single thread graph compute engine over three large graph datasets.
-Since COST mmaps the input file, we store the input files into another RDMA-backed block device.
-For server centric architecture, we evaluate GraphX using a 16-node m2.4xlarge cluster on EC2. 
-Figure \ref{fig:benefit} shows the application runtime of COST-DDC and GraphX-Server Centric.
-For most of the case, COST-DDC is 1.48 to 3.04 times faster than GraphX-Server Centric, except Pagerank on UK-2007-5 dataset. 
-After talking to one of the author of GraphX, we discovered that the UK-2007-05 dataset has better partition property such that there are fewer vertices spanning machines, hence GraphX performs well. 
-We also evaluate the performance benefit of using remote memory over local SSD.
-From Figure ~\ref{fig:benefit}, swapping using RDMA is 1.06 to 2.15 times faster than its SSD counterpart. 
-
-
-}
 
 
 
