@@ -1,10 +1,14 @@
+\vspace{-0.1in}
 \section{Network Requirements}
 \label{sec:requirements}
+\vspace{-0.05in}
 We start by evaluating network latency and bandwidth requirements for disaggregation.
 We describe our evaluation methodology (\S \ref{ssec:rmethod}), present our results (\S \ref{ssec:rr}) and then discuss their implications (\S \ref{ssec:rtt}). 
 
+\vspace{-0.1in}
 \subsection{Methodology}
 \label{ssec:rmethod}
+\vspace{-0.05in}
 In DDC, traffic between resources that was contained within a server is now carried on the ``external'' network. As with other types of interconnects, the key requirement will be low latency and high throughput to enable this disaggregation. We review the forms of communication between resources within a server in Table~\ref{tab:tech} to examine the feasibility of such a network. As mentioned in \S\ref{sec:summary}, CPU-to-CPU cache coherence traffic does not cross the external network.
 For I/O traffic to storage devices, the current latency and bandwidth requirements are such that we can expect to consolidate them into the network fabric with low performance impact. 
 Thus, the dominant impact to application performance will come from CPU-memory disaggregation; hence, we focus on evaluating the network bandwidth and latency required to support remote memory. 
@@ -50,10 +54,10 @@ and should be interpreted as relative performance degradation over different net
 Note too that the delay we inject is purely an artificial parameter and hence does not (for example) realistically model queueing delays that may result from network congestion caused by the extra traffic due to disaggregation; we consider network-wide traffic and effects such as congestion in \S\ref{sec:existing}.
 To compensate the performance noise on EC2, we run each experiment 10 times and take the median result.
 
-
-
+\vspace{-0.1in}
 \subsection{Results}
 \label{ssec:rr}
+\vspace{-0.05in}
 We start by evaluating application performance in a disaggregated vs. a server-centric architecture. 
 Figure~\ref{fig:latb} plots the performance degradation for each application under different assumptions about the latency and bandwidth to remote memory. In these experiments, we set the local memory in the disaggregated scenario to be  $25\%$ of that in the server-centric case (we will examine our choice of 25\% shortly). 
 
@@ -163,9 +167,10 @@ Overall, we conclude that \emph{it is possible to achieve resource disaggregatio
   \label{tab:latency}
 \end{table*}
 %
+\vspace{-0.1in}
 \subsection{Implications and Feasibility}
 \label{ssec:rtt}
-
+\vspace{-0.05in}
 We now examine the feasibility of meeting the requirements identified above. 
 
 \paragraphb{Local memory} We start with the requirement of between $20-30$\% local memory. In our experiments, this corresponds to between $1.50-2.25$GB/core. We look to existing hardware prototypes for validation of this requirement. The Firebox prototype targets $128$GB of local memory shared by $100$ cores leading to $1.28$GB/core,\footnote{We thank Krste Asanovi{\'c} for clarification on the technical specifications of Firebox.} while the analysis in ~\cite{ddcHwDesign1} uses $1.5$GB/core. Thus we conclude that our requirement on local memory is compatible with demonstrated hardware prototypes.

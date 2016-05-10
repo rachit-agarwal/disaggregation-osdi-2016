@@ -1,15 +1,17 @@
+\vspace{-0.1in}
 \section{Introduction}
 \label{sec:intro}
-Existing datacenters are built using servers, each of which tightly integrates a small amount of the various resources needed for a computing task (CPU\rc{compute}, memory, storage). While such server-centric architectures have been the mainstay for decades, recent efforts suggest a forthcoming paradigm shift towards a {\em disaggregated} datacenter (\dis) where each resource type is built as a standalone resource `blade' and a network fabric interconnects these resource blades. Examples of this include Facebook~\cite{fdr}, HP~\cite{hptm}, Intel~\cite{rsa}, SeaMicro~\cite{seamicro} as well as prototypes from the computer architecture community~\cite{firebox, sonuma, ddcHwDesign1}. 
+\vspace{-0.05in}
+Existing datacenters are built using servers, each of which tightly integrates a small amount of the various resources needed for a computing task (CPU, memory, storage). While such server-centric architectures have been the mainstay for decades, recent efforts suggest a forthcoming paradigm shift towards a {\em disaggregated} datacenter (\dis) where each resource type is built as a standalone resource `blade' and a network fabric interconnects these resource blades. Examples of this include Facebook~\cite{fdr}, HP~\cite{hptm}, Intel~\cite{rsa}, SeaMicro~\cite{seamicro} as well as prototypes from the computer architecture community~\cite{firebox, sonuma, ddcHwDesign1}. 
 
-These industrial and academic efforts have been driven largely by hardware architects because CPU\rc{compute}, memory and storage technologies exhibit significantly different trends in terms of cost, performance and power scaling~\cite{memristors,nvram,reg-ex-hardware,gpus}. This, in turn, makes it increasingly hard to adopt evolving resource technologies within a server-centric architecture (\eg, the memory-capacity wall making CPU-memory co-location unsustainable~\cite{ddcHwDesign1}). By decoupling these resources, \dis makes it easier for each resource technology to evolve independently, and reduces the time-to-adoption by avoiding the burdensome process of redoing integration and motherboard design. In addition, disaggregation also enables fine-grained and efficient provisioning and scheduling of individual resources across jobs~\cite{hotnets}. 
+These industrial and academic efforts have been driven largely by hardware architects because CPU, memory and storage technologies exhibit significantly different trends in terms of cost, performance and power scaling~\cite{memristors,nvram,reg-ex-hardware,gpus}. This, in turn, makes it increasingly hard to adopt evolving resource technologies within a server-centric architecture (\eg, the memory-capacity wall making CPU-memory co-location unsustainable~\cite{ddcHwDesign1}). By decoupling these resources, \dis makes it easier for each resource technology to evolve independently, and reduces the time-to-adoption by avoiding the burdensome process of redoing integration and motherboard design. In addition, disaggregation also enables fine-grained and efficient provisioning and scheduling of individual resources across jobs~\cite{hotnets}. 
 
 Despite the aforementioned efforts towards and benefits of resource disaggregation, there has been little systematic evaluation of the \emph{network} requirements for resource disaggregation. Disaggregating CPU from memory and disk requires that the inter-resource communication that used to be contained within a server must now traverse the network fabric. To be able to maintain application-level performance close to server-centric architectures{\footnote{In the longer term one might expect to re-architect existing applications to exploit \dis for better performance (e.g., by leveraging remote memory); in the shorter term, which is our focus, all we can hope for is that the application performance degradation (due to CPU-memory disaggregation) is small while still reaping the aforementioned qualitative benefits of resource disaggregation.}}, it becomes critical that the network fabric provide low latency communication for this increased load. The heretofore unexamined questions, which we address here, are (i) just what are these latency and bandwidth requirements, and (ii) are they feasible with today's technologies.
 
 \eat{This paper takes a first step towards addressing these questions. That is, rather than proposing a new network design, this paper systematically explores: (i) the (bandwidth and latency) requirements from the network fabric in resource disaggregated datacenters, and (ii) how well do existing (deployed or proposed) designs meet these requirements. \eat{We also use our findings (summarized below) to critically explore the assumptions and design decisions made in existing disaggregated prototypes and to identify gaps in existing network designs, and discuss how these observations can guide the design of network hardware and network stacks for resource disaggregated datacenters. \rc{$\gets$ Don't like this para much; sounds like a weak first preview of our work}
 }
 }
-We answer these questions in the context of \rc{{\em nine}} diverse workloads spanning \rc{six} popular open-source systems --- off-disk batch processing using Hadoop, in-memory batch processing using Spark, distributed graph processing using GraphLab, extremely optimized graph processing using Timely dataflow~\cite{timely-dataflow, timely-dataflow1}, point queries with memcached~\cite{memcached} \rc{and HERD~\cite{herd}}, and an optimized in-memory SQL engine SparkSQL. Our key findings are:
+We answer these questions in the context of \rc{{\em ten}} diverse workloads spanning \rc{seven} popular open-source systems --- off-disk batch processing using Hadoop, in-memory batch processing using Spark, distributed graph processing using GraphLab, extremely optimized graph processing using Timely dataflow~\cite{timely-dataflow, timely-dataflow1}, \rc{stream processing using Spark Streaming}, point queries with memcached~\cite{memcached} \rc{and HERD~\cite{herd}}, and an optimized in-memory SQL engine SparkSQL. Our key findings are:
 
 \begin{itemize}[leftmargin=*]
 \itemsep0em
@@ -32,12 +34,12 @@ Before continuing, we note three limitations of our work. First, our results are
 \begin{figure*}[!t]
 \centering 
 \subfigure[Current datacenter] {
-\includegraphics[width=3.05in]{img/DC_before_4.pdf}
+\includegraphics[width=2.6in]{img/DC_before_4.pdf}
 \label{subfig:dc_before}
 }
-\hfill
+%\hfill
 \subfigure[Disaggregated datacenter] {
-\includegraphics[width=3.05in]{img/DC_after_2.pdf}
+\includegraphics[width=2.6in]{img/DC_after_2.pdf}
 \label{subfig:dc_after}
 }
 \caption{High-level architectural differences between server-centric and resource-disaggregated datacenters.}
