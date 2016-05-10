@@ -1,24 +1,9 @@
-\vspace{-0.1in}
+%\vspace{-0.1in}
 \section{Network Designs for Disaggregation}
 %
 %
-\begin{figure}[t]
-  \centering
-%    \subfigure[Datacenter-Scale Disaggregation]{
-%      \includegraphics[width=\columnwidth]{img/slowdowns/100g/allFlows_dc-scale_slowdowns} 
-%      \label{fig:phostp-dc}
-%    }
-%    \subfigure[Rack-Scale Disaggregation]{
-      \includegraphics[width = 0.485\textwidth]{img/slowdowns/100g/allFlows_rack-scale_slowdowns} 
-%      \label{fig:phostp-rs}
-%    }
-  \caption{\small{The performance of the five protocols for the case of $100$Gbps access link capacity. The results for $40$Gbps access links lead to similar conclusions. See \S\ref{ssec:nlp} for discussion on these results.}}
-  \label{fig:phostp}
-\end{figure}
-%
-%
 \label{sec:existing}
-\vspace{-0.05in}
+%\vspace{-0.05in}
 Our evaluation so far ignored the impact of queueing delay on end-to-end latency and hence application performance; we remedy the omission in this section.
 The challenge is that queueing delay is a function of the overall network design, including: the traffic workload, network topology and routing, and the end-to-end transport protocol. Our evaluation focuses on existing proposals for transport protocols, with standard assumptions about the datacenter topology and routing. However, the input traffic workload in \dis will be very different from that in a server-centric datacenter and, to our knowledge, no models exist that characterize traffic in a \dis. 
 
@@ -45,10 +30,25 @@ SR:OSDI-CUT
 \end{figure*}
 }
 %
-\vspace{-0.1in}
+%
+\begin{figure}[t]
+  \centering
+%    \subfigure[Datacenter-Scale Disaggregation]{
+%      \includegraphics[width=\columnwidth]{img/slowdowns/100g/allFlows_dc-scale_slowdowns} 
+%      \label{fig:phostp-dc}
+%    }
+%    \subfigure[Rack-Scale Disaggregation]{
+      \includegraphics[width = 0.485\textwidth]{img/slowdowns/100g/allFlows_rack-scale_slowdowns} 
+%      \label{fig:phostp-rs}
+%    }
+  \caption{\small{The performance of the five protocols for the case of $100$Gbps access link capacity. The results for $40$Gbps access links lead to similar conclusions. See \S\ref{ssec:nlp} for discussion on these results.}}
+  \label{fig:phostp}
+\end{figure}
+%
+%\vspace{-0.1in}
 \subsection{Methodology: \dis Traffic Workloads}
 \label{ssec:ssmethod-traffic}
-\vspace{-0.05in}
+%\vspace{-0.05in}
 Using our experimental setup from \S\ref{ssec:rmethod}, we collect a remote memory access trace from our instrumentation tool as described in \S\ref{ssec:rmethod}, a network access trace using {\tt tcpdump}~\cite{tcpdump}, and a disk access trace using the {\tt blktrace} utility.
 
 We translate the accesses from the above traces to network flows 
@@ -70,10 +70,10 @@ Figure~\ref{fig:trafvol} plots a few characteristics of our resultant \dis traff
 \pg{We omit Spark Streaming and HERD because Spark Streaming generates negligible remote memory traffic and HERD only works in single server mode in its current implementation.}
 }
 
-\vspace{-0.1in}
+%\vspace{-0.1in}
 \subsection{Methodology: Queueing delay}
 \label{ssec:ssmethod}
-\vspace{-0.05in}
+%\vspace{-0.05in}
 We evaluate the use of existing network designs for \dis in two steps.
 First, we evaluate how existing network designs fare under \dis traffic workloads. 
 For this, we consider a suite of state-of-the-art network designs and use simulation to evaluate their network-layer performance -- measured in terms of flow completion time (FCT) -- under the traffic workloads we generate as above.
@@ -89,10 +89,10 @@ We evaluate five protocols; in each case, we set protocol-specific parameters fo
 
 We evaluate both rack-scale and datacenter-scale traffic generation, where communicating nodes are constrained to be within a rack and unconstrained, respectively.
 
-\vspace{-0.1in}
+%\vspace{-0.1in}
 \subsection{Network-level performance}
 \label{ssec:nlp}
-\vspace{-0.05in}
+%\vspace{-0.05in}
 We evaluate the performance of our candidate transport protocols in terms of their  mean slowdown~\cite{pfabric}, which is computed as follows. The slowdown for a flow is computed by dividing the flow completion time achieved in simulation by the time that the flow would take to complete if it were alone in the network. The mean slowdown is then computed by averaging the slowdown over all flows.
 Figure~\ref{fig:phostp} plots the mean slowdown for our five candidate protocols, using $100$Gbps links (all other parameters are as in \S\ref{ssec:ssmethod}). 
 
@@ -118,10 +118,10 @@ its own rack. The results are shown in Figure~\ref{fig:phostp}. We see that, wit
 However, one should not conclude from this that rack-scale containment is not useful because our slowdown metric masks differences in the \emph{absolute} FCT values. Instead, slowdown is useful primarily to compare across different transport protocol designs. The impact of these absolute FCT values is captured in our next experiments.
 }
 
-\vspace{-0.1in}
+%\vspace{-0.1in}
 \subsection{Application-level performance}
 \label{ssec:alp}
-\vspace{-0.05in}
+%\vspace{-0.05in}
 We now use the FCTs obtained from the above simulations as the memory access times in our emulation methodology from \S\ref{sec:requirements}. We use the FCTs from pFabric as it achieves the best slowdowns over a range of test scenarios. 
 
 We measure the degradation in application performance that results from injecting remote memory access times drawn from the FCTs that pFabric achieves with 40Gbps links and with 100Gbps links, in each case considering both datacenter-wide and rack-scale disaggregation. As in \S\ref{sec:requirements}, we measure performance degradation compared to the baseline of performance without disaggregation (i.e., injecting zero latency). 

@@ -41,7 +41,11 @@ We use workloads from diverse applications running on real-world and benchmark d
 We take these applications as is rather than seek to optimize them for \dis; this represents a worst-case for the network, as \dis-driven application modifications could lessen the network requirements. 
 }
 %\sr{New long-and-gory text}
-We elaborate briefly on our choice to take these applications as is, rather than seek to optimize them for \dis. Our focus in this paper is on understanding whether and why networking might gate the deployment of \dis.  For this, we are interested in the degradation that applications might suffer if they were to run in \dis. We thus compare the performance of an application in a server-centric architecture to its performance in the disaggregated context we consider here (with its level of bandwidth and local memory). This would be strictly worse than if we compared to the application's performance if it had been rewritten for this disaggregated context. Thus, legacy (i.e., server-centric) applications represent the worst-case in terms of potential degradation and give us a lower bound on the network requirements needed for disaggregation (it might be that rewritten applications could make due with lower bandwidths). Clearly, if new networking technologies exceed this lower bound, then all applications (legacy and `native' \dis) will benefit. Similarly, new programming models designed to exploit disaggregation can only improve the performance of all applications. The question of how to achieve improved performance through new technologies and programming models is an interesting one but beyond the scope of our effort and hence one we leave to future work. 
+We elaborate briefly on our choice to take these applications as is, rather than seek to optimize them for \dis. Our focus in this paper is on understanding whether and why networking might gate the deployment of \dis.  
+For this, we are interested in the degradation that applications might suffer if they were to run in \dis. We thus compare the performance of an application in a server-centric architecture to its performance in the disaggregated context we consider here (with its level of bandwidth and local memory). 
+This would be strictly worse than if we compared to the application's performance if it had been rewritten for this disaggregated context. Thus, legacy (i.e., server-centric) applications represent the worst-case in terms of potential degradation and give us a lower bound on the network requirements needed for disaggregation (it might be that rewritten applications could make due with lower bandwidths). 
+Clearly, if new networking technologies exceed this lower bound, then all applications (legacy and `native' \dis) will benefit. Similarly, new programming models designed to exploit disaggregation can only improve the performance of all applications. 
+The question of how to achieve improved performance through new technologies and programming models is an interesting one but beyond the scope of our effort and hence one we leave to future work. 
 
 
 %These workloads constitute a wide variety of application domains including off-disk batch processing (Hadoop), in-memory batch processing (Spark), graph processing (GraphLab) and point queries (memcached).
@@ -70,15 +74,17 @@ Next, we ran our testbed on c3.4xlarge instances with $2$Gbps access links (incr
 \end{figure}
 %
 %
-\begin{figure}[h]
+\begin{figure}[t]
   \centering
     \includegraphics[width=\columnwidth]{img/vary_remote_mem.eps} 
   \caption{\small{Impact of ``local memory'' on the results of Figure~\ref{fig:latb} for end-to-end latency fixed to $5\mu$s and network bandwidth $40$Gbps.}} %Local memory has significant impact on the performance of sharks and noticeable impact on dolphins (at least until $40\%$). Beyond $35\%$ local memory, both sharks and dolphins achieve performance within reasonable bounds. This could be reduced to $30\%$ for lower latency and/or higher bandwidth configurations (see Table~\ref{tab:rmem}).}}
   \label{fig:impb}
 \end{figure}
+\vspace{1em}
 %
 %
-\begin{table}
+\vspace{1em}
+\begin{table}[t]
     \centering
     \small
     \begin{tabular}{c|c|c}
@@ -104,7 +110,7 @@ Next, we ran our testbed on c3.4xlarge instances with $2$Gbps access links (incr
         \includegraphics[width=0.95\columnwidth]{img/mem_bandwidth}
         \label{fig:memband}
     }
-    \caption{\small{\rqc{Performance degradation of applications is strongly correlated with the swap memory bandwidth and the overall memory bandwidth utilization.}}}
+    \caption{\small{Performance degradation of applications is correlated with the swap memory bandwidth and overall memory bandwidth utilization.}}
     \label{fig:bandwidths11}
 \end{figure*}
 %
@@ -154,17 +160,18 @@ In all cases, increasing the amount of local memory beyond $40\%$ has little to 
 
 
 \paragraphb{Understanding (and extrapolating from) our results} 
-One might ask \emph{why} we see the above requirements -- i.e., what characteristic of the applications that we evaluate led to the specific bandwidth and latency requirements we report? An understanding of these characteristics could also allow us to generalize our findings to other applications. 
+One might ask \emph{why} we see the above requirements -- i.e., what characteristic of the applications that we evaluated led to the specific bandwidth and latency requirements we report? An understanding of these characteristics could also allow us to generalize our findings to other applications. 
 
 %The results in Figure~\ref{fig:latb} lead to two interesting questions. First, what differentiates the dolphin applications from shark applications, and causes the variation in results across applications within a class? Second, how should one estimate the performance degradation for a new application and workload?
 
-We partially answer this question using Figure~\ref{fig:bandwidths11}, which plots the performance degradation of the above nine workloads against their swap and memory bandwidth{\footnote{We use Intel's Performance Counter Monitor software~\cite{intel-mem-count} to read the uncore performance counters that measure the number of bytes written to and read from the integrated memory controller on each CPU. We confirmed using benchmarks designed to saturate memory bandwidth~\cite{mem-band-bench} that we could observe memory bandwidth utilization numbers approaching the reported theoretical maximum. As further validation, we verified that our Spark SQL measurement is consistent with prior work~\cite{georgeporter}.}}. Figure~\ref{fig:swapband} and~\ref{fig:memband} show that the performance degradation of applications is strongly correlated with the swap and the memory bandwidth utilized by the application. The clear correlation with swap bandwidth is to be expected; however, we see that the overall memory bandwidth use is also well correlated with the resultant degradation. This suggests that an application's memory bandwidth requirements might serve as a rough indicator of its expected degradation under disaggregation: this is convenient as memory bandwidth is easily measured with requiring any of 
+We partially answer this question using Figure~\ref{fig:bandwidths11}, which plots the performance degradation of the above nine workloads against their swap and memory bandwidth{\footnote{We use Intel's Performance Counter Monitor software~\cite{intel-mem-count} to read the uncore performance counters that measure the number of bytes written to and read from the integrated memory controller on each CPU. We confirmed using benchmarks designed to saturate memory bandwidth~\cite{mem-band-bench} that we could observe memory bandwidth utilization numbers approaching the reported theoretical maximum. As further validation, we verified that our Spark SQL measurement is consistent with prior work~\cite{georgeporter}.}}. Figure~\ref{fig:swapband} and~\ref{fig:memband} show that an application's performance degradation is very strongly correlated with its swap bandwidth and well correlated with its memory bandwidth. The clear correlation with swap bandwidth is to be expected. That the overall memory bandwidth is also well correlated with the resultant degradation is perhaps less obvious and an encouraging result as it suggests that an application's memory bandwidth requirements might serve as a rough indicator of its expected degradation under disaggregation: this is convenient as memory bandwidth is easily measured without requiring any of our instrumentation (i.e., emulating remote memory by a special swap device, etc.). Thus it should be easy for application developers to get a rough sense of the performance degradation they might expect under degradation and hence the urgency of rewriting their application for disaggregated contexts.
 
-one way to generalize our results to new application s
+We also note that there is room for more accurate predictors: the difference between the two figures (Figs.~\ref{fig:swapband} and~\ref{fig:memband}) shows that the locality in memory access patterns does play some role in the expected degradation (since the swap bandwidth which is a better predictor captures only the subset of memory accesses that miss in local memory). Building better prediction models that account for an application's memory access pattern is an interesting question that we leave to future work. 
 
+
+\eat{
 The results from Figure~\ref{fig:bandwidths11} also suggest a way to generalize our results to new applications and workloads. Specifically, one can measure the swap bandwidth \rc{note that it's easier to measure memory bandwidth?} and the overall memory bandwidth for a new application and extrapolate from the results in Figure~\ref{fig:bandwidths11} to obtain a rough estimate on performance degradation for the new application and/or workload.
-
-rather intuitive, the difference between the two figures suggests that the performance degradation also depends on ``locality'', that is, the distribution of data accesses across the range of memory addresses. Measuring these access patterns and other contributing factors to performance degradation is an interesting avenue of future research.
+} 
 
 
 

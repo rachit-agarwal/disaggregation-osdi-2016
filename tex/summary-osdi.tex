@@ -3,7 +3,7 @@
 \label{sec:summary}
 \vspace{-0.05in}
 
-\rc{cut: background subsection, folded into 2.1 and section intro}
+%\rc{cut: background subsection, folded into 2.1 and section intro}
 
 \begin{table}
   \centering
@@ -130,4 +130,4 @@ We assume that applications in \dis read and write large files at the granularit
 \vspace{-0.05in}
 Given the above assumptions, we are left with two key system design choices that we treat as ``knobs'' in our study: {\em the amount of local memory on compute blades} and  {\em the scope of disaggregation} (e.g., rack- or datacenter-scale). We will explore how varying these knobs impacts the network requirements and traffic characteristics in \dis. 
 
-The remainder of this paper is organized as follows. We first analyze network-layer bandwidth and latency requirements in \dis(\S\ref{sec:requirements}) \emph{without} considering contention between network flows, then in \S\ref{sec:existing} relax this constraint. We end with a brief discussion of the potential application performance benefits of disaggregation and related work in \S\ref{sec:discussion}.
+The remainder of this paper is organized as follows. We first analyze network-layer bandwidth and latency requirements in \dis(\S\ref{sec:requirements}) \emph{without} considering contention between network flows, then in \S\ref{sec:existing} relax this constraint. We end with a discussion of the future directions in \S\ref{sec:future}.
