@@ -2,8 +2,8 @@
 \section{Network Designs for Disaggregation}
 \label{sec:existing}
 \vspace{-0.05in}
-Our evaluation so far ignored the impact of queueing delay on end-to-end latency and hence application performance. We remedy the omission in this section.
-The challenge is that queueing delay is a function of the overall network design, including: the traffic workload, network topology and routing, and the end-to-end transport protocol. Our evaluation focuses on existing proposals for transport protocols, with standard assumptions about the datacenter topology and routing (described below). However, the input traffic workload in \dis will be very different from that in a server-centric datacenter and, to our knowledge, no models exist that characterize traffic in a \dis. 
+Our evaluation so far ignored the impact of queueing delay on end-to-end latency and hence application performance; we remedy the omission in this section.
+The challenge is that queueing delay is a function of the overall network design, including: the traffic workload, network topology and routing, and the end-to-end transport protocol. Our evaluation focuses on existing proposals for transport protocols, with standard assumptions about the datacenter topology and routing. However, the input traffic workload in \dis will be very different from that in a server-centric datacenter and, to our knowledge, no models exist that characterize traffic in a \dis. 
 
 We thus start by devising a methodology that extends our experimental setup to generate an application-driven input traffic workload (\S\ref{ssec:ssmethod-traffic}), then describe how we use this traffic model to evaluate the impact of queueing delay (\S\ref{ssec:ssmethod}). Finally, we present our results on: (i) how existing transport designs perform under \dis traffic workloads (\S\ref{ssec:nlp}), and (ii) how existing transport designs impact end-to-end application performance (\S\ref{ssec:alp}). To our knowledge, our results represent the first evaluation of transport protocols for \dis. 
 
@@ -64,7 +64,7 @@ We then return to actual execution of our applications (Table~\ref{tab:workloads
 However, now we inject the flow completion times obtained from our best-performing network design (as opposed to the constant latencies from \S\ref{sec:requirements}). This last step effectively `closes the loop', allowing us to evaluate the impact of disaggregation on application-level performance for realistic network designs and conditions. 
 
 \paragraphb{Simulation Setup}
-For all the simulations in this section, we use the same setup as prior work on datacenter transport designs~\cite{pfabric, phost}. 
+We use the same simulation setup as prior work on datacenter transports~\cite{pfabric, phost,dctcp}. 
 We simulate a %$144$-node (9 racks of 16 servers each) 
 topology with 9 racks and a full bisection bandwidth Clos topology with $36$KB buffers per port; our two changes from prior work are to use $40$Gbps or $100$Gbps access links (as per ~\S\ref{sec:requirements}), and setting propagation and switching delays as discussed in \S\ref{ssec:rtt} (Table~\ref{tab:latency}).
 %: 20 ns within a rack, 200ns for aggregation links, and a switching delay of 200ns per hop. 
@@ -125,7 +125,7 @@ We now use the FCTs obtained from the above simulations as the memory access tim
 We measure the degradation in application performance that results from injecting remote memory access times drawn from the FCTs that pFabric achieves with 40Gbps links and with 100Gbps links, in each case considering both datacenter-wide and rack-scale disaggregation. As in \S\ref{sec:requirements}, we measure performance degradation compared to the baseline of performance without disaggregation (i.e., injecting zero latency). 
 
 In all cases, we find that the inclusion of queueing delay \emph{does} have a non-trivial impact on performance degradation -- typically increasing the performance degradation relative to the case of zero-queueing delay by between 2-3x. 
-Figure~\ref{fig:appfabric100} plots the performance degradation for 100Gbps links: we see that degradation ranges between 1-8.5\% on average with datacenter scale disaggregation, and containment to a rack lowers the degradation to between 0.4-3.5\% on average. In topologies with 40Gbps links, we find a median performance degradation of 17\% with datacenter-scale disaggregation (figure not shown). 
+Figure~\ref{fig:appfabric100} plots the performance degradation for 100Gbps links: we see that degradation ranges between 1-8.5\% on average with datacenter scale disaggregation, and containment to a rack lowers the degradation to between 0.4-3.5\% on average. In topologies with 40Gbps links, we find a average performance degradation of 14\% with datacenter-scale disaggregation and 11\% with rack-scale disaggregation (figure not shown). 
 This leads us to conclude that 100Gbps links are both required and sufficient to contain the performance impact of queueing delay.
 
 %
@@ -137,83 +137,3 @@ This leads us to conclude that 100Gbps links are both required and sufficient to
 \end{figure}
 %
 
-\vspace{-0.1in}
-\subsection{Low latency remote memory}
-\vspace{-0.05in}
-\rc{
-As we have established in the previously section, a DDC requires 100Gbps bandwidth and 3-5us end-to-end latency. 
-Current datacenter network usually has 20us network latency, and by our analysis, 5-7us of end-to-end latency is within reach. 
-If we enable RDMA inside the datacenter, which takes aways the overhead at OS layer, we can get latency as low as 3-5us. 
-We validate this by building a kernel space RDMA block device driver, and use this block device driver as the swap device.
-With the RDMA block device driver, the local machine can swap to remote memory instead of swapping to disk.
-
-We implement the block device driver on a machine with Mellanox  4xFDR Infiniband card.
-To maintain high throughput, we first use a batch implementation that batches block requests and sends all of them together to the RDMA NIC.
-The driver waits for all the request to come back and notify the upper layer.
-We test the block device throughput using \textit{dd} with direct IO, and measure the request latency by instrumenting the driver code.
-The block device throughput is only 0.8GB/s and the latency is around 4-16us.
-We observed that many block requests are actually contiguous in address, so we merge these request in to one large request. 
-With request merging, the throughput becomes 2.6GB/s, which is ~3x better than the batch version. 
-The performance of the block device driver can be further improved by issuing RDMA requests asynchronously.
-We create a data structure to keep track of all the out going requests and notify the upper layer immediately for each completed request.
-This improves the throughput to 3.3GB/s which is as high as a local RamFS, and reduces the request latency to 3-4us (Table \ref{tab:rdma_latency}).
-
-\begin{table}[t]
-    \centering
-    \small
-    \begin{tabular}{ccccc}
-    \textbf{Min}	& \textbf{Avg}	& \textbf{Median} & \textbf{99.5 Pcntl}	& \textbf{Max}\\
-    \hline
-    3394 &	3492&	3438&	4549&	12254\\\hline
-    \end{tabular}
-    \caption{RDMA block device request latency(ns)}
-    \label{tab:rdma_latency}
-\end{table}
-
-In current non-NUMA architecture, Linux Kernel only launches one \textit{kswapd} to swap out least recently used pages. 
-This could be a bottleneck for apps that heavily use remote memory.
-We enable the NUMA\_EMU feature in Linux kernel, which partitions the memory into several regions, and each memory region gets its own \textit{kswapd}. 
-This improves the throughput of swapping out memory pages.
-
-
-The RDMA block device driver provides us a simple and efficient way utilize remote memory. 
-We setup the block device as swap space and run the \rc{5} applications evaluated in \S \ref{sec:requirements} with lower latency requirements.
-\rc{waiting for joao's results}
-
-}
-\rc{
-\paragraphb{Measuring swap latency}
-We measured the software overhead of swapping on a commodity desktop running
-Linux 3.13.0. In order to do so, we needed to collect two data points with
-minimal modifications to the codebase --- the overall time spent in the page
-fault handler on a swap and the time spent actually accessing disk. Although
-convenient measurement tools such as \texttt{ftrace} exist, they introduced
-unacceptable overhead for our purposes. We also could not arbitrarily introduce
-\texttt{printk} calls within the areas we were measuring, since \texttt{printk}
-introduces a noticable overhead when measuring on the order of microseconds. In
-order to perform the measurement, we took advantage of the fact that the
-\texttt{handle\_mm\_fault} function called by the page fault handler (and which
-eventually handles swaps) never utilizes the upper 16 bits of its 32 bit return
-value, as evidenced by the \texttt{VM\_FAULT\_*} macros in the \texttt{mm.h}
-header.
-
-Thus, we wrap both the body of the \texttt{\_\_do\_page\_fault} function and the
-call to the \texttt{swapin\_readahead} function (which performs a swap from
-disk) in ktime\_get calls.  We then pack the result of the measurement for the
-swapin\_readahead function into the upper 16-bits of its caller,
-\texttt{do\_swap\_page}, which propagates the value up to
-\texttt{\_\_do\_page\_fault}. Once we have completed measuring the body of
-\texttt{\_\_do\_page\_fault}, we print both the latency of the whole
-\texttt{\_\_do\_page\_fault} routine, as well as the time spent in
-\texttt{swapin\_readahead}. We subtract these and average to find that the
-software overhead of page fault handler is around 20.5 microseconds. This
-number is a lower-bound on the software overhead of the handler, because we
-assume that all of swapin\_readahead is a ``disk access''. This is due to the fact
-that we cannot neatly instrument inside swapin\_readahead in the same manner
-since it returns a pointer.
-
-Overall, our measurement code introduces a very small number of bitwise
-operations (ANDs, ORs, shifts), one integer subtraction, and four calls to
-\texttt{ktime\_get} into the handler, which together have a negligible impact on
-measurements.
-}

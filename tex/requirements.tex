@@ -36,17 +36,13 @@ software overheads later in this section).
 \paragraphb{Applications}
 % We conduct a series of experiments to examine how network latency and bandwidth affect application performance with remote memory accesses (which we emulate as described below). 
 We use workloads from diverse applications running on real-world and benchmark datasets, as shown in Table~\ref{tab:workloads}. 
-
+\eat{
 \sr{Old short-and-sweet text}
 We take these applications as is rather than seek to optimize them for \dis; this represents a worst-case for the network, as \dis-driven application modifications could lessen the network requirements. 
-
-\sr{New long-and-gory text:
-We elaborate briefly on our choice to take these applications as is, rather than seek to optimize them for \dis. Our focus in this paper is on understanding whether and why networking might gate the deployment of \dis.  For this, we are interested in the degradation that applications might suffer if they were to run in a disaggregated context. Disaggregation will, by definition, not degrade applications that have been rewritten to exploit \dis.
-%(since their baseline performance is already based on a disaggregated system). 
-In contrast, a legacy (i.e., server-centric) application is likely to experience degradation and in fact represents the worst-case in terms of potential degradation (since a legacy implementation of an application $A$ running on a disaggregated datacenter will always perform worse than a rewritten version of $A$ that is designed to exploit disaggregation).
-
-Thus focusing on legacy applications gives us a lower bound on the network requirements needed for disaggregation. Clearly, if new networking technologies exceed this lower bound, then all applications (legacy and `native' \dis) will benefit. Similarly, new programming models designed to exploit disaggregation can only improve the performance of all applications. The question of how to achieve improved performance through new technologies and programming models is an interesting one but beyond the scope of our effort and hence one we leave to future work. 
 }
+\sr{New long-and-gory text}
+We elaborate briefly on our choice to take these applications as is, rather than seek to optimize them for \dis. Our focus in this paper is on understanding whether and why networking might gate the deployment of \dis.  For this, we are interested in the degradation that applications might suffer if they were to run in \dis. We thus compare the performance of an application in a server-centric architecture to its performance in the disaggregated context we consider here (with its level of bandwidth and local memory). This would be strictly worse than if we compared to the application's performance if it had been rewritten for this disaggregated context. Thus, legacy (i.e., server-centric) applications represent the worst-case in terms of potential degradation and give us a lower bound on the network requirements needed for disaggregation (it might be that rewritten applications could make due with lower bandwidths). Clearly, if new networking technologies exceed this lower bound, then all applications (legacy and `native' \dis) will benefit. Similarly, new programming models designed to exploit disaggregation can only improve the performance of all applications. The question of how to achieve improved performance through new technologies and programming models is an interesting one but beyond the scope of our effort and hence one we leave to future work. 
+
 
 %These workloads constitute a wide variety of application domains including off-disk batch processing (Hadoop), in-memory batch processing (Spark), graph processing (GraphLab) and point queries (memcached).
 
@@ -155,6 +151,11 @@ As expected, we see that shark applications are more sensitive to the amount of 
 %even for $5\mu$s end-to-end latency. 
 %In contrast, dolphin applications are far less sensitive to the amount of local memory. 
 In all cases, increasing the amount of local memory beyond $40\%$ has little to no impact on performance degradation.
+
+\paragraphb{Summary of results} 
+In summary, supporting memory disaggregation while maintaining application-level performance within reasonable bounds imposes certain requirements on the network in terms of the end-to-end latency and bandwidth it must provide. Moreover, these requirements are closely related to the amount of local memory available to CPU blades. Table~\ref{tab:rmem} summarizes these requirements for the applications we studied. We specifically investigate a few combinations of network latency, bandwidth, and the amount of local memory needed to maintain a performance degradation under 5\%. 
+We highlight these design points because they represent what we consider to be sweet spots in achievable targets both for the amount of local memory and for network requirements, as we discuss next.
+
 %
 \begin{table*}[t]
   \centering
@@ -185,11 +186,6 @@ In all cases, increasing the amount of local memory beyond $40\%$ has little to 
   \label{tab:latency}
 \end{table*}
 %
-
-\paragraphb{Summary of results} 
-In summary, supporting memory disaggregation while maintaining application-level performance within reasonable bounds imposes certain requirements on the network in terms of the end-to-end latency and bandwidth it must provide. Moreover, these requirements are closely related to the amount of local memory available to CPU blades. Table~\ref{tab:rmem} summarizes these requirements for the applications we studied. We specifically investigate a few combinations of network latency, bandwidth, and the amount of local memory needed to maintain a performance degradation under 5\%. 
-We highlight these design points because they represent what we consider to be sweet spots in achievable targets both for the amount of local memory and for network requirements, as we discuss next.
-
 \rqc{
 \paragraphb{Other applications} 
 The results in Figure~\ref{fig:latb} lead to two interesting questions. First, what differentiates the dolphin applications from shark applications, and causes the variation in results across applications within a class? Second, how should one estimate the performance degradation for a new application and workload?
@@ -225,7 +221,6 @@ Next, we examine the feasibility of meeting our targets for network bandwidth an
 
 \paragraphb{Network bandwidth} Our bandwidth requirements are easily met: $40$Gbps is available today in commodity datacenter switches \emph{and} server NICs~\cite{40gnic}; in fact, even $100$Gbps switches and NICs are available, though not as widely~\cite{100gnic}.
 Thus, ignoring the potential effects of congestion (which we consider next in \S\ref{sec:existing}), providing the network bandwidth needed for disaggregation should pose no problem. Moreover, this should continue to be the case in the future because the trend in link bandwidths currently exceeds that in number of cores~\cite{hmc1, hmc2, hmc3}.
-
 
 
 \paragraphb{Network latency} The picture is less clear with respect to latency. In what follows, we consider the various components of network latency and whether they can be accommodated in our target budget of 3$\mu$secs (for sharks) to 5$\mu$secs (for dolphins).

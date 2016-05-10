@@ -1,0 +1,59 @@
+\vspace{-0.1in}
+\section{Future Directions}
+\label{sec:future}
+\vspace{-0.05in}
+
+So far, we used emulation and simulation to evaluate the minimum network requirements for disaggregation, with a focus on minimizing degradation in application performance. 
+This opens two directions for future work that we briefly investigate here: (1) demonstrating an end-to-end system implementation of remote memory access that meets our latency targets, and (2) investigating programming models that actively exploit disaggregation to \emph{improve} performance.
+Our results in this section are merely intended to demonstrate the potential for realizing positive results to the above questions: each topic merits an in-depth exploration that is out of scope for this paper.
+
+
+\vspace{-0.1in}
+\subsection{Achieving low-latency remote memory accesses}
+\vspace{-0.05in}
+We previous identified an end-to-end latency target of 3-5us for \dis and argued for the use of  RDMA to meet this target. The (promising) RDMA latencies we assumed in \S\ref{sec:existing} were based 
+on measurements reported by native RDMA-based applications. 
+We were curious about the feasibility of realizing these latencies by leveraging 
+
+
+
+%As we have established in the previously section, a DDC requires 100Gbps bandwidth and 3-5us end-to-end latency. 
+%Current datacenter network usually has 20us network latency, and by our analysis, 5-7us of end-to-end latency is within reach. 
+%If we enable RDMA inside the datacenter, which takes aways the overhead at OS layer, we can get latency as low as 3-5us. 
+We validate this by building a kernel space RDMA block device driver, and use this block device driver as the swap device.
+With the RDMA block device driver, the local machine can swap to remote memory instead of swapping to disk.
+
+We implement the block device driver on a machine with Mellanox  4xFDR Infiniband card.
+To maintain high throughput, we first use a batch implementation that batches block requests and sends all of them together to the RDMA NIC.
+The driver waits for all the request to come back and notify the upper layer.
+We test the block device throughput using \textit{dd} with direct IO, and measure the request latency by instrumenting the driver code.
+The block device throughput is only 0.8GB/s and the latency is around 4-16us.
+We observed that many block requests are actually contiguous in address, so we merge these request in to one large request. 
+With request merging, the throughput becomes 2.6GB/s, which is ~3x better than the batch version. 
+The performance of the block device driver can be further improved by issuing RDMA requests asynchronously.
+We create a data structure to keep track of all the out going requests and notify the upper layer immediately for each completed request.
+This improves the throughput to 3.3GB/s which is as high as a local RamFS, and reduces the request latency to 3-4us (Table \ref{tab:rdma_latency}).
+
+\begin{table}[t]
+    \centering
+    \small
+    \begin{tabular}{ccccc}
+    \textbf{Min}	& \textbf{Avg}	& \textbf{Median} & \textbf{99.5 Pcntl}	& \textbf{Max}\\
+    \hline
+    3394 &	3492&	3438&	4549&	12254\\\hline
+    \end{tabular}
+    \caption{RDMA block device request latency(ns)}
+    \label{tab:rdma_latency}
+\end{table}
+
+In current non-NUMA architecture, Linux Kernel only launches one \textit{kswapd} to swap out least recently used pages. 
+This could be a bottleneck for apps that heavily use remote memory.
+We enable the NUMA\_EMU feature in Linux kernel, which partitions the memory into several regions, and each memory region gets its own \textit{kswapd}. 
+This improves the throughput of swapping out memory pages.
+
+
+The RDMA block device driver provides us a simple and efficient way utilize remote memory. 
+We setup the block device as swap space and run the \rc{5} applications evaluated in \S \ref{sec:requirements} with lower latency requirements.
+\rc{waiting for joao's results}
+
+}
