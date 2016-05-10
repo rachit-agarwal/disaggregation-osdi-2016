@@ -11,12 +11,12 @@ We present early results investigating the above with the intent of demonstratin
 \vspace{-0.1in}
 \subsection{Implementing remote memory access}
 \vspace{-0.05in}
-We previous identified an end-to-end latency target of 3-5us for \dis that we argued could be met with RDMA. The (promising) RDMA latencies in \S\ref{sec:existing} are as reported by native RDMA-based applications. 
+We previously identified an end-to-end latency target of 3-5us for \dis that we argued could be met with RDMA. The (promising) RDMA latencies in \S\ref{sec:existing} are as reported by native RDMA-based applications. 
 We were curious about the feasibility of realizing these latencies if we were to retain our architecture from the previous section in which remote memory is accessed as a special swap device as this would provide a simple and transparent approach to utilizing remote memory. 
 
 We thus built a kernel space RDMA block device driver which serves as a swap device; \ie, the local CPU can now swap to remote memory instead of disk.
 We implemented the block device driver on a machine with Mellanox 4xFDR Infiniband card providing 54 Gbps bandwidth.
-We test the block device throughput using \textit{dd} with direct IO, and measure the request latency by instrumenting the driver code. 
+We test the block device throughput using \texttt{dd} with direct IO, and measure the request latency by instrumenting the driver code. 
 The end-to-end latency of our approach includes the RDMA request latency and the latency introduced by the kernel swap itself. We focus on each in turn. 
 
 \paragraph{RDMA request latency.} A few optimizations were necessary to improve RDMA performance in our context. First, we \emph{batch} block requests sent to the RDMA NIC and the driver waits for all the requests to return before notifying the upper layer: this gave a block device throughput of only 0.8GB/s and latency around 4-16us.
