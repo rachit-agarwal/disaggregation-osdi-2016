@@ -186,15 +186,22 @@ To better understand the relative performance of the evaluated applications, we 
 We confirmed using benchmarks designed to saturate memory bandwidth~\cite{mem-band-bench} that we could observe memory bandwidth utilization numbers approaching the reported theoretical maximum.
 As further validation, we verified that our Spark SQL measurement is consistent with prior work~\cite{georgeporter}.
 
-Our measurement, as shown in Figure~\ref{fig:memband}, indicates that applications that make greater use of memory bandwidth will experience higher performance degradation in \dis. Therefore, one might instrument other applications' memory bandwidth utilization for a preview of their performance in a disaggregated environment. 
+Our measurement, as shown in Figure~\ref{fig:bandwidths}, indicates that applications that make greater use of memory bandwidth will experience higher performance degradation in \dis. Therefore, one might instrument other applications' memory bandwidth utilization for a preview of their performance in a disaggregated environment. 
 }
 
-\begin{figure}
-  \centering
-    \includegraphics[width=\columnwidth]{img/mem_bandwidth.pdf} 
+\begin{figure*}
+    \centering
+    \subfigure[\rc{Swap Bandwidth Utilization}]{
+        \includegraphics[width=0.95\columnwidth]{img/swap_bandwidth}
+        \label{fig:swapband}
+    }
+    \subfigure[\rc{Memory Bandwidth Utilization}]{
+        \includegraphics[width=0.95\columnwidth]{img/mem_bandwidth}
+        \label{fig:memband}
+    }
     \caption{\small{\rc{CPU-reported memory bandwidth utilization for the eight measured applications as well as Spark Streaming. Performance degradation increases with memory bandwidth utilization.}}}
-  \label{fig:memband}
-\end{figure}
+    \label{fig:bandwidths}
+\end{figure*}
 
 \paragraphb{Network latency} The picture is less clear with respect to latency. In what follows, we consider the various components of network latency and whether they can be accommodated in our target budget of 3$\mu$secs (for sharks) to 5$\mu$secs (for dolphins).
 
