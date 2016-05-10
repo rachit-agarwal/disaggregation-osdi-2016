@@ -3,13 +3,13 @@
 \label{sec:future}
 \vspace{-0.05in}
 
-So far, we used emulation and simulation to evaluate the minimum network requirements for disaggregation, with a focus on minimizing degradation in application performance. 
+So far, we used emulation and simulation to evaluate the minimum network requirements for \dis disaggregation, with a focus on minimizing degradation in application performance. 
 This opens two directions for future work that we briefly investigate here: (1) demonstrating an end-to-end system implementation of remote memory access that meets our latency targets, and (2) investigating programming models that actively exploit disaggregation to \emph{improve} performance.
 Our results in this section are merely intended to demonstrate the potential for realizing positive results to the above questions: each topic merits an in-depth exploration that is out of scope for this paper.
 
 
 \vspace{-0.1in}
-\subsection{Implementing low-latency remote memory access}
+\subsection{Implementing remote memory access}
 \vspace{-0.05in}
 We previous identified an end-to-end latency target of 3-5us for \dis and argued for the use of  RDMA to meet this target. The (promising) RDMA latencies we assumed in \S\ref{sec:existing} were based on measurements reported by native RDMA-based applications. 
 We were curious about the feasibility of realizing these latencies if we were to retain our 
@@ -49,3 +49,41 @@ We setup the block device as swap space and run the \rc{5} applications evaluate
 \rc{waiting for joao's results}
 
 }
+
+
+\paragraphb{Swap latency}
+We measured the software overhead of swapping on a commodity desktop running
+Linux 3.13.0. For this, we must collect (and separate out) two data points with
+minimal modifications to the codebase --- the overall time spent in the page
+fault handler on a swap and the time spent actually accessing disk. We found that 
+convenient measurement tools such as \texttt{ftrace} and \texttt{printk} 
+introducedunacceptable overhead for our purposes. 
+%We also could not arbitrarily introduce
+%\texttt{printk} calls within the areas we were measuring, since \texttt{printk}
+%introduces a noticable overhead when measuring on the order of microseconds.
+Instead, we took advantage of the fact that the
+\texttt{handle\_mm\_fault} function called by the page fault handler (and which
+eventually handles swaps) never utilizes the upper 16 bits of its 32 bit return
+value (as evidenced by the \texttt{VM\_FAULT\_*} macros in the \texttt{mm.h}
+header). Thus, we wrap both the body of the \texttt{\_\_do\_page\_fault} function and the
+call to the \texttt{swapin\_readahead} function (which performs a swap from
+disk) in ktime\_get calls.  We then pack the result of the measurement for the
+swapin\_readahead function into the upper 16-bits of its caller,
+\texttt{do\_swap\_page}, which propagates the value up to
+\texttt{\_\_do\_page\_fault}. 
+Once we have measured the body of
+\texttt{\_\_do\_page\_fault}, we record both the latency of the whole
+\texttt{\_\_do\_page\_fault} routine, as well as the time spent in
+\texttt{swapin\_readahead}. We subtract these and average to find that the
+software overhead of page fault handler is 2.47 $\mu$s. This
+number is a lower-bound on the software overhead of the handler, because we
+assume that all of \texttt{swapin\_readahead} is a ``disk access'' (we cannot neatly instrument inside \texttt{swapin\_readahead} in the same manner since it returns a pointer).
+
+In combination with the RDMA request latencies, we find that a system implementation  
+of 
+
+%Overall, our measurement code introduces a very small number of bitwise
+%operations (ANDs, ORs, shifts), one integer subtraction, and four calls to
+%\texttt{ktime\_get} into the handler, which together have a negligible impact on
+%measurements.
+
