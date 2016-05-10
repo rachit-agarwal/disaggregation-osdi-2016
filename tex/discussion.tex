@@ -1,5 +1,6 @@
 \vspace{-0.1in}
 \section{Improved Application Performance in DDC}
+\label{sec:improved}
 \vspace{-0.05in}
 \rqc{
 Our study so far has focused on characterizing the network requirements for \dis that would lead to little or no performance degradation in existing applications. However, in longer term, one might expect to re-architect existing applications to exploit \dis for improved performance. This is possible due to at least two factors enabled by \dis: (1) better resource utilization via resource multiplexing~\cite{hotnets}{\footnote{As argued in~\cite{hotnets, ddcHwDesign1}, CPU-to-memory utilization for tasks in today’s datacenters varies by three orders of magnitude across tasks. \dis, via statistical multiplexing, enables significantly better resource utilization compared to today's datacenters.}}; and (2) availability of higher density memory architectures~\cite{ddcHwDesign1}.
@@ -35,7 +36,7 @@ From Figure ~\ref{fig:benefit}, swapping using RDMA is 1.06 to 2.15 times faster
 
 As mentioned earlier, there are many recent and ongoing efforts to prototype disaggregated hardware. We discussed the salient features of these efforts inline throughout this paper and hence we only briefly elaborate on them here. 
 
-Lim \etal~\cite{ddcHwDesign1, ddcHwDesign2} discuss the trend of growing peak compute-to-memory ratio, warning of the ``memory capacity wall'' and prototype a disaggregated memory blade. Their results demonstrate that memory disaggregation is feasible and can even provide a 10x performance improvement in memory constrained environments. As noted earlier, our study focuses on the (for us) worst-case scenario where applications are not memory constrained in the non-disaggregated scenario and hence the potential performance degradation due to disaggregation is high. For the same reason, we did not consider redesigning applications to exploit the plentiful remote memory available in \dis. 
+Lim \etal~\cite{ddcHwDesign1, ddcHwDesign2} discuss the trend of growing peak compute-to-memory ratio, warning of the ``memory capacity wall'' and prototype a disaggregated memory blade. Their results demonstrate that memory disaggregation is feasible and can even provide a 10x performance improvement in memory constrained environments. As noted earlier, our study focuses on the (for us) worst-case scenario where applications are not memory constrained in the non-disaggregated scenario and hence the potential performance degradation due to disaggregation is high. For the same reason, we did not consider redesigning applications to exploit the plentiful remote memory available in \dis \rc{ other than the brief discussion in \S\ref{sec:improved}}.
 
 Sudan \etal~\cite{ddcHwDesign3} use an ASIC based interconnect fabric to build a virtualized I/O system for better resource sharing. However, these interconnects are designed for their specific context; the authors neither discuss network support for disaggregation more broadly nor consider the possibility of leveraging known datacenter network technologies to enable disaggregation.
 
@@ -64,7 +65,7 @@ Similarly efforts toward NIC integration by CPU architects~\cite{cpu-nic} promis
 
 \begin{figure}
   \centering
-    \includegraphics[width = \columnwidth]{img/benefit.eps} 
+    \includegraphics[width = \columnwidth]{img/benefit_uk.eps} 
   \caption{\small{Running COST in a simulated DDC. COST-DDC is 1.48 to 3.04 faster than GraphX-Server Centric. We use three datasets in our evaluation, Twitter (4.17m nodes, 1.47b edges), UK-2007-05 (105m nodes, 3.7b edges), and Friendster (65m nodes, 1.8b edges)}}
   \label{fig:benefit}
 \end{figure}

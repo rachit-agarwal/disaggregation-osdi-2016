@@ -3,7 +3,7 @@
 \label{sec:existing}
 \vspace{-0.05in}
 Our evaluation so far ignored the impact of queueing delay on end-to-end latency and hence application performance. We remedy the omission in this section.
-The challenge is that queueing delay is a function of the overall network design, including: the traffic workload, network topology and routing, the end-to-end transport protocol. Our evaluation focuses on existing proposals for transport protocols, with standard assumptions about the datacenter topology and routing (described below). However, the input traffic workload in \dis will be very different from that in a server-centric datacenter and, to our knowledge, no models exist that characterize traffic in a \dis. 
+The challenge is that queueing delay is a function of the overall network design, including: the traffic workload, network topology and routing, and the end-to-end transport protocol. Our evaluation focuses on existing proposals for transport protocols, with standard assumptions about the datacenter topology and routing (described below). However, the input traffic workload in \dis will be very different from that in a server-centric datacenter and, to our knowledge, no models exist that characterize traffic in a \dis. 
 
 We thus start by devising a methodology that extends our experimental setup to generate an application-driven input traffic workload (\S\ref{ssec:ssmethod-traffic}), then describe how we use this traffic model to evaluate the impact of queueing delay (\S\ref{ssec:ssmethod}). Finally, we present our results on: (i) how existing transport designs perform under \dis traffic workloads (\S\ref{ssec:nlp}), and (ii) how existing transport designs impact end-to-end application performance (\S\ref{ssec:alp}). To our knowledge, our results represent the first evaluation of transport protocols for \dis. 
 
@@ -39,10 +39,10 @@ in our simulated disaggregated cluster by splitting each node into one compute, 
 
 All memory and disk accesses captured above are associated with a specific address in the corresponding CPU's global virtual address space. We assume this address space is uniformly partitioned across all memory and disk blades reflecting our assumption of distributed data placement (\S\ref{ssec:system}).  
 
-One subtlety remains. Consider the disk accesses at a server A in the original cluster: one might view all these disk accesses as corresponding to a flow between the compute blade corresponding A and the disk blade corresponding to A but in reality some of these disk accesses may have been issued by A's CPU in response to a request from a remote server B (\eg, due to a shuffle request). 
-In the disaggregated cluster, this access should be treated as a network flow between \emph{B}'s compute blade and A's disk blade %SR:OSDI-CUT (i.e., the compute blade obtained by disaggregating server B and the disk blade that corresponds to disaggregating A).
+One subtlety remains. Consider the disk accesses at a server $A$ in the original cluster: one might view all these disk accesses as corresponding to a flow between the compute  and disk blades corresponding to $A$ but in reality some of these disk accesses may have been issued by $A$'s CPU in response to a request from a remote server $B$ (\eg, due to a shuffle request). 
+In the disaggregated cluster, this access should be treated as a network flow between \emph{$B$}'s compute blade and $A$'s disk blade %SR:OSDI-CUT (i.e., the compute blade obtained by disaggregating server B and the disk blade that corresponds to disaggregating A).
 
-To correctly attribute accesses to the CPU that originates the request, we match network and disk traces across the cluster -- e.g., matching the network traffic between B and A to the disk traffic at A -- using a heuristic based on both the timestamps and volume of data transferred. 
+To correctly attribute accesses to the CPU that originates the request, we match network and disk traces across the cluster -- e.g., matching the network traffic between $B$ and $A$ to the disk traffic at $A$ -- using a heuristic based on both the timestamps and volume of data transferred. 
 If a locally captured memory or disk access request matches a local flow in our {\tt tcpdump} traces, then it is assumed to be part of a remote read and is attributed to the remote endpoint of the network flow.
 Otherwise, the memory/disk access is assumed to have originated from the local CPU. 
 %
@@ -72,6 +72,21 @@ We evaluate five protocols; in each case, we set protocol-specific parameters fo
 
 We evaluate both rack-scale and datacenter-scale traffic generation, where communicating nodes are constrained to be within a rack and unconstrained, respectively.
 
+%
+\begin{figure}[t]
+  \centering
+%    \subfigure[Datacenter-Scale Disaggregation]{
+%      \includegraphics[width=\columnwidth]{img/slowdowns/100g/allFlows_dc-scale_slowdowns} 
+%      \label{fig:phostp-dc}
+%    }
+%    \subfigure[Rack-Scale Disaggregation]{
+      \includegraphics[width = 0.485\textwidth]{img/slowdowns/100g/allFlows_rack-scale_slowdowns} 
+%      \label{fig:phostp-rs}
+%    }
+  \caption{\small{The performance of the five protocols for the case of $100$Gbps access link capacity. The results for $40$Gbps access links lead to similar conclusions. See \S\ref{ssec:nlp} for discussion on these results.}}
+  \label{fig:phostp}
+\end{figure}
+%
 \vspace{-0.1in}
 \subsection{Network-level performance}
 \label{ssec:nlp}
@@ -106,20 +121,6 @@ However, one should not conclude from this that rack-scale containment is not us
 \label{ssec:alp}
 \vspace{-0.05in}
 We now use the FCTs obtained from the above simulations as the memory access times in our emulation methodology from \S\ref{sec:requirements}. We use the FCTs from pFabric as it achieves the best slowdowns over a range of test scenarios. 
-
-\begin{figure}
-  \centering
-%    \subfigure[Datacenter-Scale Disaggregation]{
-%      \includegraphics[width=\columnwidth]{img/slowdowns/100g/allFlows_dc-scale_slowdowns} 
-%      \label{fig:phostp-dc}
-%    }
-%    \subfigure[Rack-Scale Disaggregation]{
-      \includegraphics[width = 0.485\textwidth]{img/slowdowns/100g/allFlows_rack-scale_slowdowns} 
-%      \label{fig:phostp-rs}
-%    }
-  \caption{\small{The performance of the five protocols for the case of $100$Gbps access link capacity. The results for $40$Gbps access links lead to similar conclusions. See \S\ref{ssec:nlp} for discussion on these results.}}
-  \label{fig:phostp}
-\end{figure}
 
 We measure the degradation in application performance that results from injecting remote memory access times drawn from the FCTs that pFabric achieves with 40Gbps links and with 100Gbps links, in each case considering both datacenter-wide and rack-scale disaggregation. As in \S\ref{sec:requirements}, we measure performance degradation compared to the baseline of performance without disaggregation (i.e., injecting zero latency). 
 
@@ -211,7 +212,7 @@ assume that all of swapin\_readahead is a ``disk access''. This is due to the fa
 that we cannot neatly instrument inside swapin\_readahead in the same manner
 since it returns a pointer.
 
-Overall, our measurement code introduces a very small (~5) number of bitwise
+Overall, our measurement code introduces a very small 5$\mu$s number of bitwise
 operations (ANDs, ORs, shifts), one integer subtraction, and four calls to
 \texttt{ktime\_get} into the handler, which together have a negligible impact on
 measurements.
