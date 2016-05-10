@@ -5,13 +5,7 @@
 Our evaluation so far ignored the impact of queueing delay on end-to-end latency and hence application performance. We remedy the omission in this section.
 The challenge is that queueing delay is a function of the overall network design, including: the traffic workload, network topology and routing, the end-to-end transport protocol. Our evaluation focuses on existing proposals for transport protocols, with standard assumptions about the datacenter topology and routing (described below). However, the input traffic workload in \dis will be very different from that in a server-centric datacenter and, to our knowledge, no models exist that characterize traffic in a \dis. 
 
-We thus start by devising a methodology that extends our experimental setup to generate an application-driven input traffic workload (\S\ref{ssec:ssmethod-traffic}), then describe how we use this traffic model to evaluate the impact of queueing delay (\S\ref{ssec:ssmethod}). Finally, we present our results on: (i) how existing transport designs perform under \dis traffic workloads (\S\ref{ssec:nlp}), and (ii) how existing transport designs impact end-to-end application performance (\S\ref{ssec:alp}). To our knowledge, our results represent the first evaluation of transport protocols for \dis. %\sr{true?} \rc{PG:not true. R2C2 has that}
-
-
-
-
-%In this section, we explore whether existing network designs can meet the requirements identified in \S\ref{sec:requirements}. 
-%We start by describing our methodology (\S\ref{ssec:ssmethod}), then evaluate the network-level performance of a suite of network designs for \dis traffic workloads (\S\ref{ssec:nlp}), and finally evaluate how these designs impact application performance (\S\ref{ssec:alp}). 
+We thus start by devising a methodology that extends our experimental setup to generate an application-driven input traffic workload (\S\ref{ssec:ssmethod-traffic}), then describe how we use this traffic model to evaluate the impact of queueing delay (\S\ref{ssec:ssmethod}). Finally, we present our results on: (i) how existing transport designs perform under \dis traffic workloads (\S\ref{ssec:nlp}), and (ii) how existing transport designs impact end-to-end application performance (\S\ref{ssec:alp}). To our knowledge, our results represent the first evaluation of transport protocols for \dis. 
 
 %
 \eat{ 
@@ -38,58 +32,25 @@ SR:OSDI-CUT
 \subsection{Methodology: \dis Traffic Workloads}
 \label{ssec:ssmethod-traffic}
 \vspace{-0.05in}
-%\paragraphb{Traces}
-Using our experimental setup from \S\ref{ssec:rmethod},%, including the applications, datasets, and EC2 cluster (with VPC enabled). 
-we collect three types of traces: 
-%\vspace{-0.5em}
-\begin{itemize}
-\item \emph{`remote' memory accesses:} using our instrumentation that intercepts 
-page faults as described in \S\ref{ssec:rmethod}; we record the 
-request size in number of pages and the timestamp for each request.
-%into the server's portion of the main memory that we've identified as ``remote memory''
-\item \emph{network accesses:} we capture inter-machine traffic using {\tt tcpdump}~\cite{tcpdump}. {\tt tcpdump} gives us a packet-level log containing the five tuple for each packet. We treat all packets with the same five-tuple (protocol ID, source and destination address/port) as a single flow{\footnote{Applications choose one of the source ports randomly to establish a connection to the destination for each request. Given the large number of available ports, we assume that multiple connections between a pair of servers do not share the same port.  
-One exception is memcached which uses long-lived connections (all packets between a client-server pair have the same five-tuple). In this case, we simply assumed each key-value pair lookup to be one flow.}}.
-\item \emph{disk accesses:} we record application-level disk accesses using the {\tt blktrace} utility, which records a collection of (block\_start\_address, \#blocks, timestamp) tuples for each disk access request. 
-%we don't do this 50us combination anymore
-%Note that a single application-level file request may generate multiple such tuples since the data is not necessarily stored on consecutive disk blocks. Since {\tt blktrace} records accesses at the granularity of disk blocks, we must identify which tuples correspond to the same application-level request. This could be done by instrumenting the application; however, this is not only complex but also would potentially interfere with the application's performance. Instead, we simply assume that all tuples with timestamps within $50\mu$s correspond to the same application-level request. 
-%The only difference is that we enabled the Virtual Private Network (VPC) in our cluster, ensuring no interference with other Amazon EC2 machines. 
-\end{itemize} 
+Using our experimental setup from \S\ref{ssec:rmethod}, we collect a remote memory access trace from our instrumentation tool as described in \S\ref{ssec:rmethod}, a network access trace using {\tt tcpdump}~\cite{tcpdump}, and a disk access trace using the {\tt blktrace} utility.
 
-Next, we translate the accesses from the above traces to network flows 
-in our simulated disaggregated cluster. 
-%\paragraphb{Mapping accesses to network flows in \dis}
-%Mapping the above traces to network traffic in our emulated disaggregated cluster again 
-This involves two steps. 
-First, we must define the resource blades that form our endpoints in the disaggregated cluster (i.e., map the resources in our server-based cluster into standalone blades in a disaggregated cluster) and then map the above traces to flows between these endpoints. 
-Mapping resources to blades is straightforward; each server is split into one compute blade, one memory blade, and one storage blade.
-%We don't do the below 3 disk thing either anymore
-%We assume one server maps to one compute blade and one memory blade but consolidate disk resources from different servers into a smaller number of disk blades so as to compensate for the relatively low throughput to disk (doing otherwise would only decrease our network load); specifically, we assume that one server's disk resources map to $60\%$ of a standalone disk blade.\footnote{We arrived at this number by aiming to balance network and disk throughputs while maintaining sufficient redundancy.} 
+We translate the accesses from the above traces to network flows 
+in our simulated disaggregated cluster by splitting each node into one compute, one memory, and one disk blade and assigning memory blades to virtual nodes.
 
-Having defined our resource blades as above, we now define how traffic 
-flows between them. 
 All memory and disk accesses captured above are associated with a specific address in the corresponding CPU's global virtual address space. We assume this address space is uniformly partitioned across all memory and disk blades reflecting our assumption of distributed data placement (\S\ref{ssec:system}).  
-%This address space is partitioned across five memory blades and three disk blades{\footnote{Some of the disk space was not utilized in our cluster.}} in \dis using range partitioning. 
-%distributes data across memory or disk access in our EC2 cluster may now be mapped along multiple blades.
 
 One subtlety remains. Consider the disk accesses at a server A in the original cluster: one might view all these disk accesses as corresponding to a flow between the compute blade corresponding A and the disk blade corresponding to A but in reality some of these disk accesses may have been issued by A's CPU in response to a request from a remote server B (\eg, due to a shuffle request). 
 In the disaggregated cluster, this access should be treated as a network flow between \emph{B}'s compute blade and A's disk blade %SR:OSDI-CUT (i.e., the compute blade obtained by disaggregating server B and the disk blade that corresponds to disaggregating A).
 
-
-%The memory and disk requests using SIT and {\tt blktrace} are captured locally at each individual server. Some of these requests correspond to requests originating at remote CPUs (\eg, shuffle traffic). 
-
-To correctly attribute accesses to the CPU that originates the request, we 
-match network and disk traces across the cluster -- e.g., matching the network traffic between B and A to the disk traffic at A -- using a heuristic based on both the timestamps and volume of data transferred. 
-%perform a timestamp-based matching between requests captured at each individual server, and inter-machine NIC traffic from {\tt tcpdump}. 
+To correctly attribute accesses to the CPU that originates the request, we match network and disk traces across the cluster -- e.g., matching the network traffic between B and A to the disk traffic at A -- using a heuristic based on both the timestamps and volume of data transferred. 
 If a locally captured memory or disk access request matches a local flow in our {\tt tcpdump} traces, then it is assumed to be part of a remote read and is attributed to the remote endpoint of the network flow.
-%(more than $85\%$, on an average, were correctly attributed in our evaluation). 
 Otherwise, the memory/disk access is assumed to have originated from the local CPU. 
-%generated locally. 
-
+%
 \eat{
 %SR: OSDI-CUT
 
 Figure~\ref{fig:trafvol} plots a few characteristics of our resultant \dis traffic workload alongside that in the corresponding non-disaggregated architecture. As expected, disaggregation significantly changes the nature of the traffic workload, pointing to the importance of our characterization effort.
-\pg{We do not have results for Spark Streaming and HERD, because Spark Streaming generates negligible remote memory traffic and HERD only works in single server mode in the current implementation.}
+\pg{We omit Spark Streaming and HERD because Spark Streaming generates negligible remote memory traffic and HERD only works in single server mode in its current implementation.}
 }
 
 \vspace{-0.1in}
@@ -99,202 +60,15 @@ Figure~\ref{fig:trafvol} plots a few characteristics of our resultant \dis traff
 We evaluate the use of existing network designs for \dis in two steps.
 First, we evaluate how existing network designs fare under \dis traffic workloads. 
 For this, we consider a suite of state-of-the-art network designs and use simulation to evaluate their network-layer performance -- measured in terms of flow completion time (FCT) -- under the traffic workloads we generate as above.
-%corresponding to each of our applications.
-%from (\S\ref{sec:workloads}).
 We then return to actual execution of our applications (Table~\ref{tab:workloads}) and once again emulate disaggregation by injecting latencies for page misses. 
 However, now we inject the flow completion times obtained from our best-performing network design (as opposed to the constant latencies from \S\ref{sec:requirements}). This last step effectively `closes the loop', allowing us to evaluate the impact of disaggregation on application-level performance for realistic network designs and conditions. 
-
-
-%
-% \begin{figure*}
-% \centering
-% \sbox{\measurebox}{%
-%   \begin{minipage}[b]{0.45\textwidth}
-%   \subfloat
-%     {\includegraphics[width=\textwidth,height=5cm]{img/slowdowns/100g/allFlows_dc-scale_slowdowns}}
-%   \end{minipage}}
-% \usebox{\measurebox}\qquad
-% \begin{minipage}[b][\ht\measurebox][s]{.45\textwidth}
-% \centering
-% \subfloat
-%   {\includegraphics[width=\textwidth,height=2cm]{img/slowdowns/100g/smallFlows_dc-scale_slowdowns}}
-
-% \vfill
-
-% \subfloat
-%   {\includegraphics[width=\textwidth,height=2cm]{img/slowdowns/100g/bigFlows_dc-scale_slowdowns}}
-% \end{minipage}
-% \caption{\small{The mean slowdown for pFabric, pHost, Fastpass, DCTCP, and TCP for each of the eight applications at datacenter-scale: (top) overall; (left) short flows only; (right) long flows.}}
-% \label{fig:phostp-ds}
-% \end{figure*}
-
-
-
-%\begin{figure*}
-%   \centering
-%     \subfigure{
-%       \includegraphics[width = 4in]{img/slowdowns/100g/allFlows_dc-scale_slowdowns} 
-%     }
-    
-%     \subfigure{
-%     \includegraphics[width=2in]{img/slowdowns/100g/smallFlows_dc-scale_slowdowns}
-%     }
-%     \subfigure{
-%     \includegraphics[width=2in]{img/slowdowns/100g/bigFlows_dc-scale_slowdowns}
-%     }
-%   \caption{\small{The mean slowdown for pFabric, pHost, Fastpass, DCTCP, and TCP for each of the eight applications at datacenter-scale: (top) overall; (left) short flows only; (right) long flows.}}
-%   \label{fig:phostp-ds}
-% \end{figure*}
-%
-
-
-
-% \begin{figure*}
-% \centering
-% \sbox{\measurebox}{%
-%   \begin{minipage}[b]{0.45\textwidth}
-%   \subfloat
-%     {\includegraphics[width=\textwidth,height=5cm]{img/slowdowns/100g/allFlows_rack-scale_slowdowns}}
-%   \end{minipage}}
-% \usebox{\measurebox}\qquad
-% \begin{minipage}[b][\ht\measurebox][s]{.45\textwidth}
-% \centering
-% \subfloat
-%   {\includegraphics[width=\textwidth,height=2cm]{img/slowdowns/100g/smallFlows_rack-scale_slowdowns}}
-
-% \vfill
-
-% \subfloat
-%   {\includegraphics[width=\textwidth,height=2cm]{img/slowdowns/100g/bigFlows_rack-scale_slowdowns}}
-% \end{minipage}
-% \caption{\small{The mean slowdown for pFabric, pHost, Fastpass, DCTCP, and TCP for each of the eight applications at rack-scale: (top) overall; (left) short flows only; (right) long flows.}}
-% \label{fig:phostp-rs}
-% \end{figure*}
-
-
-% \begin{figure*}
-%   \centering
-%     \subfigure{
-%       \includegraphics[width = 4in]{img/slowdowns/100g/allFlows_rack-scale_slowdowns} 
-%     }
-    
-%     \subfigure{
-%     \includegraphics[width=2in]{img/slowdowns/100g/smallFlows_rack-scale_slowdowns}
-%     }
-%     \subfigure{
-%     \includegraphics[width=2in]{img/slowdowns/100g/bigFlows_rack-scale_slowdowns}
-%     }
-%   \caption{\small{The mean slowdown for pFabric, pHost, Fastpass, DCTCP, and TCP for each of the eight applications at rack-scale: (top) overall; (left) short flows only; (right) long flows.}}
-%   \label{fig:phostp-rs}
-% \end{figure*}
-
-
-% \begin{figure*}
-% \centering
-% \sbox{\measurebox}{%
-%   \begin{minipage}[b]{0.45\textwidth}
-%   \subfloat
-%     {\includegraphics[width=\textwidth,height=5cm]{img/slowdowns/40g/allFlows_dc-scale_slowdowns}}
-%   \end{minipage}}
-% \usebox{\measurebox}\qquad
-% \begin{minipage}[b][\ht\measurebox][s]{.45\textwidth}
-% \centering
-% \subfloat
-%   {\includegraphics[width=\textwidth,height=2cm]{img/slowdowns/40g/smallFlows_dc-scale_slowdowns}}
-
-% \vfill
-
-% \subfloat
-%   {\includegraphics[width=\textwidth,height=2cm]{img/slowdowns/40g/bigFlows_dc-scale_slowdowns}}
-% \end{minipage}
-% \caption{\small{The mean slowdown at 40g for pFabric, pHost, Fastpass, DCTCP, and TCP for each of the eight applications at datacenter-scale: (top) overall; (left) short flows only; (right) long flows.}}
-% \label{fig:phostp-ds-40g}
-% \end{figure*}
-
-
-% \begin{figure*}
-%   \centering
-%     \subfigure{
-%       \includegraphics[width = 4in]{img/slowdowns/40g/allFlows_dc-scale_slowdowns} 
-%     }
-    
-%     \subfigure{
-%     \includegraphics[width=2in]{img/slowdowns/40g/smallFlows_dc-scale_slowdowns}
-%     }
-%     \subfigure{
-%     \includegraphics[width=2in]{img/slowdowns/40g/bigFlows_dc-scale_slowdowns}
-%     }
-%   \caption{\small{The mean slowdown at 40g for pFabric, pHost, Fastpass, DCTCP, and TCP for each of the eight applications at datacenter-scale: (top) overall; (left) short flows only; (right) long flows.}}
-%   \label{fig:phostp-ds-40g}
-% \end{figure*}
-%
-
-% \begin{figure*}
-% \centering
-% \sbox{\measurebox}{%
-%   \begin{minipage}[b]{0.45\textwidth}
-%   \subfloat
-%     {\includegraphics[width=\textwidth,height=5cm]{img/slowdowns/40g/allFlows_rack-scale_slowdowns}}
-%   \end{minipage}}
-% \usebox{\measurebox}\qquad
-% \begin{minipage}[b][\ht\measurebox][s]{.45\textwidth}
-% \centering
-% \subfloat
-%   {\includegraphics[width=\textwidth,height=2cm]{img/slowdowns/40g/smallFlows_rack-scale_slowdowns}}
-
-% \vfill
-
-% \subfloat
-%   {\includegraphics[width=\textwidth,height=2cm]{img/slowdowns/40g/bigFlows_rack-scale_slowdowns}}
-% \end{minipage}
-% \caption{\small{The mean slowdown at 40g for pFabric, pHost, Fastpass, DCTCP, and TCP for each of the eight applications at rack-scale: (top) overall; (left) short flows only; (right) long flows.}}
-%   \label{fig:phostp-rs-40g}
-% \end{figure*}
-
-
-% \begin{figure*}
-%   \centering
-%     \subfigure{
-%       \includegraphics[width = 4in]{img/slowdowns/40g/allFlows_rack-scale_slowdowns} 
-%     }
-    
-%     \subfigure{
-%     \includegraphics[width=2in]{img/slowdowns/40g/smallFlows_rack-scale_slowdowns}
-%     }
-%     \subfigure{
-%     \includegraphics[width=2in]{img/slowdowns/40g/bigFlows_rack-scale_slowdowns}
-%     }
-%   \caption{\small{The mean slowdown at 40g for pFabric, pHost, Fastpass, DCTCP, and TCP for each of the eight applications at rack-scale: (top) overall; (left) short flows only; (right) long flows.}}
-%   \label{fig:phostp-rs-40g}
-% \end{figure*}
-
-%There were multiple challenges in performing the above evaluations that we encountered.
-%
 
 \paragraphb{Simulation Setup}
 For all the simulations in this section, we use the same setup as prior work on datacenter transport designs~\cite{pfabric, phost}. 
 We simulate a %$144$-node (9 racks of 16 servers each) 
 topology with 9 racks and a full bisection bandwidth Clos topology with $36$KB buffers per port; our two changes from prior work are to use $40$Gbps or $100$Gbps access links (as per ~\S\ref{sec:requirements}), and setting propagation and switching delays as discussed in \S\ref{ssec:rtt} (Table~\ref{tab:latency}).
 %: 20 ns within a rack, 200ns for aggregation links, and a switching delay of 200ns per hop. 
-We evaluate the following five protocols. 
-%\an{not true? can we just say we took the default settings from the papers and adapted them to our BDP?: } 
-In each case, we set protocol-specific parameters following the default settings but adapted to our bandwidth-delay product as recommended. 
-%to the values that we found (through experimentation) yielded the best performance for that protocol.
-
-\begin{enumerate}[leftmargin=*]
-\itemsep0em
-\item {\bf TCP}, with an initial congestion window of 2.
-\item {\bf DCTCP}, which leverages ECN for enhanced performance in datacenter contexts.  
-\item {\bf pFabric}, approximates shortest-job-first scheduling in a network context using switch support to prioritize  flows with a smaller remaining flow size~\cite{pfabric}. %We set pFabric to have an initial congestion window of 12 packets and a retransmission timeout of $45$us.
-%
-\item {\bf pHost}, emulates pFabric's behavior but using only scheduling at the end hosts~\cite{phost} and hence allows the use of commodity switches. %We set pHost to have a free token limit of 8 packets and a retransmission timeout of $9.5$us as recommended in ~\cite{phost}.
-%; we obtained these parameters from pHost's implementation.
-%
-\item {\bf Fastpass}, introduces a centralized scheduler that schedules every packet. We implement Fastpass's scheduling algorithm in our simulator as described in ~\cite{phost} and optimistically assume that the scheduler's decision logic itself incurs no overhead.% (i.e., takes zero time).% and hence we only consider the latency and bandwidth overhead of contacting the central scheduler. 
-%The implementation of this centralized arbiter is discussed in detail in previous work~\cite{phost}. 
-%We set the Fastpass epoch size to be 8 packets.%, obtained from the Fastpass paper.
-%
-\end{enumerate}
+We evaluate five protocols; in each case, we set protocol-specific parameters following the default settings but adapted to our bandwidth-delay product as recommended. Two protocols, TCP and DCTCP~\cite{dctcp}, see wide adoption today; the remaining three --- pFabric~\cite{pfabric}, pHost~\cite{phost}, and Fastpass~\cite{fastpass} --- are recent research proposals.
 
 \eat{ 
 %SR: OSDI-CUT
@@ -313,7 +87,7 @@ In each case, we set protocol-specific parameters following the default settings
 }
 
 
-
+\cut{
 \paragraphb{Traffic Generation}
 As mentioned above, the disaggregated datacenter we simulate includes %$144$ nodes.
 9 racks. Reflecting our EC2 testbed with 5 servers, we populate each rack with  5 CPU blades, 5 memory blades and 5 storage blades.
@@ -338,8 +112,13 @@ Since we pack resources by a factor of 3, each endpoint independently draws from
 %SR: OSDI-CUT The resulting injected load can be seen in Figure~\ref{fig:loadcdf}. 
 %\an{Note that with a $40$Gbps link bandwidth, load on some sources approaches 0.8}. 
 
+}
 
-
+\paragraphb{Traffic Generation}
+We simulate a disaggregated datacenter under two settings in a datacenter with 144 nodes.
+In rack-scale disaggregation, CPUs blades only talk to memory and disk blades located on the same rack.
+In datacenter-scale disaggregation, CPUs blades can talk to any resources across the entire datacenter.
+We generate flows by drawing from the CDFs corresponding to its resource type.
 
 \vspace{-0.1in}
 \subsection{Network-level performance}
@@ -365,8 +144,8 @@ We observed similar results in our simulation of rack-scale disaggregation (grap
 Second, we note that while pFabric and pHost perform comparably, Fastpass fares worse; this is consistent with the findings reported in~\cite{phost}.
 
 Finally, we  repeat the above simulations but this time simulate rack-scale 
-disaggregation; i.e., a CPU blade's associated memory and disk blades are selected from 
-its own rack. The results are shown in Figure~\ref{fig:phostp-rs}. We see that, with the exception of Fastpass, rack-scale disaggregation does not significantly alter the slowdown values. (Fastpass fares worse with rack-scale disaggregation because the centralized scheduler is not rack-local and hence the cost of contacting the scheduler is relatively greater.)
+disaggregation; \ie, a CPU blade's associated memory and disk blades are selected from 
+its own rack. The results are shown in Figure~\ref{fig:phostp}. We see that, with the exception of Fastpass, rack-scale disaggregation does not significantly alter the slowdown values. (Fastpass fares worse with rack-scale disaggregation because the centralized scheduler is not rack-local and hence the cost of contacting the scheduler is relatively greater.)
 However, one should not conclude from this that rack-scale containment is not useful because our slowdown metric masks differences in the \emph{absolute} FCT values. Instead, slowdown is useful primarily to compare across different transport protocol designs. The impact of these absolute FCT values is captured in our next experiments.
 }
 
@@ -378,12 +157,12 @@ We now use the FCTs obtained from the above simulations as the memory access tim
 
 \begin{figure}
   \centering
-    \subfigure[Datacenter-Scale Disaggregation]{
-      \includegraphics[width = \columnwidth]{img/slowdowns/100g/allFlows_dc-scale_slowdowns} 
-      \label{fig:phostp-dc}
-    }
+%    \subfigure[Datacenter-Scale Disaggregation]{
+%      \includegraphics[width=\columnwidth]{img/slowdowns/100g/allFlows_dc-scale_slowdowns} 
+%      \label{fig:phostp-dc}
+%    }
 %    \subfigure[Rack-Scale Disaggregation]{
-%      \includegraphics[width = 0.485\textwidth]{img/slowdowns/100g/allFlows_rack-scale_slowdowns} 
+      \includegraphics[width = 0.485\textwidth]{img/slowdowns/100g/allFlows_rack-scale_slowdowns} 
 %      \label{fig:phostp-rs}
 %    }
   \caption{\small{The performance of the five protocols for the case of $100$Gbps access link capacity. The results for $40$Gbps access links lead to similar conclusions. See \S\ref{ssec:nlp} for discussion on these results.}}
@@ -452,4 +231,40 @@ The RDMA block device driver provides us a simple and efficient way utilize remo
 We setup the block device as swap space and run the \rc{5} applications evaluated in \S \ref{sec:requirements} with lower latency requirements.
 \rc{waiting for joao's results}
 
+}
+\rc{
+\paragraphb{Measuring page fault latency}
+We measured the software overhead of swapping on a commodity desktop running
+Linux 3.13.0. In order to do so, we needed to collect two data points with
+minimal modifications to the codebase --- the overall time spent in the page
+fault handler on a swap and the time spent actually accessing disk. Although
+convenient measurement tools such as \texttt{ftrace} exist, they introduced
+unacceptable overhead for our purposes. We also could not arbitrarily introduce
+\texttt{printk} calls within the areas we were measuring, since \texttt{printk}
+introduces a noticable overhead when measuring on the order of microseconds. In
+order to perform the measurement, we took advantage of the fact that the
+\texttt{handle\_mm\_fault} function called by the page fault handler (and which
+eventually handles swaps) never utilizes the upper 16 bits of its 32 bit return
+value, as evidenced by the \texttt{VM\_FAULT\_*} macros in the \texttt{mm.h}
+header.
+
+Thus, we wrap both the body of the \texttt{\_\_do\_page\_fault} function and the
+call to the \texttt{swapin\_readahead} function (which performs a swap from
+disk) in ktime\_get calls.  We then pack the result of the measurement for the
+swapin\_readahead function into the upper 16-bits of its caller,
+\texttt{do\_swap\_page}, which propagates the value up to
+\texttt{\_\_do\_page\_fault}. Once we have completed measuring the body of
+\texttt{\_\_do\_page\_fault}, we print both the latency of the whole
+\texttt{\_\_do\_page\_fault} routine, as well as the time spent in
+\texttt{swapin\_readahead}. We subtract these and average to find that the
+software overhead of page fault handler is around 20.5 microseconds. This
+number is a lower-bound on the software overhead of the handler, because we
+assume that all of swapin\_readahead is a ``disk access''. This is due to the fact
+that we cannot neatly instrument inside swapin\_readahead in the same manner
+since it returns a pointer.
+
+Overall, our measurement code introduces a very small (~5) number of bitwise
+operations (ANDs, ORs, shifts), one integer subtraction, and four calls to
+\texttt{ktime\_get} into the handler, which together have a negligible impact on
+measurements.
 }

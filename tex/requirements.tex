@@ -1,3 +1,16 @@
+%
+\begin{figure*}[!t]
+  \centering
+  \subfigure{
+    \includegraphics[width=\textwidth]{img/vary_latency_bw.eps}  
+  }
+  \subfigure{
+    \includegraphics[width=\textwidth]{img/vary_latency_bw_high.eps}
+  }
+  \caption{\small{Comparison of application-level performance in disaggregated datacenters with respect to existing server-centric architectures for different latency/bandwidth configurations and $25\%$ local memory on CPU blades --- Dolphins (top) and Sharks (bottom). To maintain application-level performance within reasonable performance bounds ($\sim 5\%$ on an average), Dolphins require $5\mu$s end-to-end latency and $40$Gbps bandwidth, and Sharks require  $3\mu$s end-to-end latency and $40-100$Gbps bandwidth. See \S\ref{ssec:rr} for detailed discussion.}}
+  \label{fig:latb}
+\end{figure*}
+%
 \vspace{-0.1in}
 \section{Network Requirements}
 \label{sec:requirements}
@@ -9,7 +22,8 @@ We describe our evaluation methodology (\S \ref{ssec:rmethod}), present our resu
 \subsection{Methodology}
 \label{ssec:rmethod}
 \vspace{-0.05in}
-In DDC, traffic between resources that was contained within a server is now carried on the ``external'' network. As with other types of interconnects, the key requirement will be low latency and high throughput to enable this disaggregation. We review the forms of communication between resources within a server in Table~\ref{tab:tech} to examine the feasibility of such a network. As mentioned in \S\ref{sec:summary}, CPU-to-CPU cache coherence traffic does not cross the external network.
+%\rc{reviewer: why not a hardware simulator}
+In \dis, traffic between resources that was contained within a server is now carried on the ``external'' network. As with other types of interconnects, the key requirement will be low latency and high throughput to enable this disaggregation. We review the forms of communication between resources within a server in Table~\ref{tab:tech} to examine the feasibility of such a network. As mentioned in \S\ref{sec:summary}, CPU-to-CPU cache coherence traffic does not cross the external network.
 For I/O traffic to storage devices, the current latency and bandwidth requirements are such that we can expect to consolidate them into the network fabric with low performance impact. 
 Thus, the dominant impact to application performance will come from CPU-memory disaggregation; hence, we focus on evaluating the network bandwidth and latency required to support remote memory. 
 
@@ -19,64 +33,22 @@ of performance penalty: i) the software overhead for trap and page eviction and 
 Given our focus on network requirements, we only consider the latter in this paper (modulo a brief discussion on current 
 software overheads later in this section).
 
-\paragraphb{Applications and Testbed}
+\paragraphb{Applications}
 % We conduct a series of experiments to examine how network latency and bandwidth affect application performance with remote memory accesses (which we emulate as described below). 
-We use workloads from diverse applications running on real-world and benchmark datasets, as shown in Table~\ref{tab:workloads}. We take these applications as is, rather than seek to optimize them for \dis; this represents a worst-case for the network, as \dis-driven application modifications could lessen the network requirements. %These workloads constitute a wide variety of application domains including off-disk batch processing (Hadoop), in-memory batch processing (Spark), graph processing (GraphLab) and point queries (memcached).
-Each application operates on $\sim125$GB of data equally distributed across an Amazon EC2 cluster comprising of $5$ m3.2xlarge servers. Each of these servers has $8$ vCPUs, $30$GB main memory, $2 \times 80$GB SSD drives and a $1$Gbps access link bandwidth.
-We enabled EC2's Virtual Private Network (VPC~\cite{vpc}) capability in our cluster to ensure no interference with other Amazon EC2 instances. 
- 
-We verified that m3.2xlarge instances' $1$Gbps access links were not a bottleneck to our experiment in two ways. 
-First, we considered CPU utilization. In all cases where the network approached full utilization, CPU was highly utilized, indicating that the CPU was not blocked on network calls. 
-Next, we ran our testbed on c3.4xlarge instances with $2$Gbps access links (increased network bandwidth with roughly the same CPU). We verified that even with more bandwidth, all applications for which link utilization was high maintained high CPU utilization. 
+We use workloads from diverse applications running on real-world and benchmark datasets, as shown in Table~\ref{tab:workloads}. 
 
-%
-\begin{figure*}
+\sr{Old short-and-sweet text}
+We take these applications as is, rather than seek to optimize them for \dis; this represents a worst-case for the network, as \dis-driven application modifications could lessen the network requirements. 
 
-  \centering
-  \subfigure{
-    \includegraphics[width=\textwidth]{img/vary_latency_bw.eps}  
-  }
+\sr{New long-and-gory text:
+We elaborate briefly on our choice to take these applications as is, rather than seek to optimize them for \dis. Our focus in this paper is on understanding whether and why networking might gate the deployment of \dis.  For this, we are interested in the degradation that applications might suffer if they were to run in a disaggregated context. Disaggregation will, by definition, not degrade applications that have been rewritten to exploit \dis.
+%(since their baseline performance is already based on a disaggregated system). 
+In contrast, a legacy (i.e., server-centric) application is likely to experience degradation and in fact represents the worst-case in terms of potential degradation (since a legacy implementation of an application $A$ running on a disaggregated datacenter will always perform worse than a rewritten version of $A$ that is designed to exploit disaggregation).
 
-  \subfigure{
-    \includegraphics[width=\textwidth]{img/vary_latency_bw_high.eps}
-  }
-  \caption{\small{Comparison of application-level performance in disaggregated datacenters with respect to existing server-centric architectures for different latency/bandwidth configurations and $25\%$ local memory on CPU blades --- Dolphins (top) and Sharks (bottom). To maintain application-level performance within reasonable performance bounds ($\sim 5\%$ on an average), Dolphins require $5\mu$s end-to-end latency and $40$Gbps bandwidth, and Sharks require  $3\mu$s end-to-end latency and $40-100$Gbps bandwidth. See \S\ref{ssec:rr} for detailed discussion.}}
-  \label{fig:latb}
-\end{figure*}
-%
-\paragraphb{Emulating remote memory} 
-When running the above workloads, we emulate remote memory accesses by implementing a special swap device that is backed by physical memory rather than a disk. This effectively partitions main memory into a ``local'' and ``remote'' portion 
-with existing page replacement algorithms controlling when and how pages are transferred between the two; we tune the amount of ``local'' memory by configuring the size of the swap device.
-We intercept all page faults and inject artificial delays to emulate network round-trip latency and bandwidth for each paging operation. 
-
-We measure relative application-level performance on the basis of job completion time as compared to the zero-delay case. Thus, our results do not account for the delay introduced by  software overheads for page operations 
-and should be interpreted as relative performance degradation over different network configurations. %, not the absolute performance of disaggregation.
-Note too that the delay we inject is purely an artificial parameter and hence does not (for example) realistically model queueing delays that may result from network congestion caused by the extra traffic due to disaggregation; we consider network-wide traffic and effects such as congestion in \S\ref{sec:existing}.
-To compensate the performance noise on EC2, we run each experiment 10 times and take the median result.
-
-\vspace{-0.1in}
-\subsection{Results}
-\label{ssec:rr}
-\vspace{-0.05in}
-We start by evaluating application performance in a disaggregated vs. a server-centric architecture. 
-Figure~\ref{fig:latb} plots the performance degradation for each application under different assumptions about the latency and bandwidth to remote memory. In these experiments, we set the local memory in the disaggregated scenario to be  $25\%$ of that in the server-centric case (we will examine our choice of 25\% shortly). 
-
-From Figure~\ref{fig:latb}, we see that our applications can be broadly divided into two categories based on the network latency and bandwidth needed to achieve a low performance penalty.
-For example, for the applications in Fig.~\ref{fig:latb} (top) --- Hadoop Wordcount, Hadoop Sort, Graphlab and Memcached --- a network with an end-to-end latency of $5\mu$s and bandwidth of $40$Gbps is sufficient to maintain an average performance penalty under 5\%. 
-In contrast, the applications in in Fig.~\ref{fig:latb} (bottom) --- Spark Wordcount, Spark Sort, Timely, SparkSQL BDB, and HERD --- require network latencies of $3\mu$s and $40-100$Gbps bandwidth to maintain an average performance penalty under 8\%. We term the former applications {\em dolphins} and the latter {\em sharks} reflecting their more relaxed vs. demanding natures and examine the feasibility of meeting their respective requirements in \S\ref{ssec:rtt}.
-
-
-
-\paragraphb{Sensitivity analysis}
-Next, we evaluate the sensitivity of application performance to network bandwidth and latency. Fig.~\ref{fig:impbw} plots the performance degradation under increasing network bandwidth assuming a fixed network latency of $5\mu$s while Fig.~\ref{fig:impl} plots degradation under increasing latency for a fixed bandwidth of $40$Gbps; in both cases, local memory is set at $25\%$ as before.
-%nd end-to-end latency to be  and varying the bandwidth from $10$Gbps to $100$Gbps (Figure~\ref{fig:impbw}). 
-
-We see that beyond $40$Gbps, increasing network bandwidth offers little improvement in application-level performance. 
-\cut{ 
-% move to later. 
-This result is in sharp contrast with existing disaggregated hardware proposals that implicitly assume the necessity of high bandwidth links using non-commodity network components (\eg, Silicon photonics~\cite{firebox, hptm, rsa}, or PCIe links~\cite{huawei}); our evaluation suggests that, for existing applications and workloads, commodity network components with $40-100$Gbps bandwidth links may be sufficient. 
+Thus focusing on legacy applications gives us a lower bound on the network requirements needed for disaggregation. Clearly, if new networking technologies exceed this lower bound, then all applications (legacy and `native' \dis) will benefit. Similarly, new programming models designed to exploit disaggregation can only improve the performance of all applications. The question of how to achieve improved performance through new technologies and programming models is an interesting one but beyond the scope of our effort and hence one we leave to future work. 
 }
-In contrast, performance --- particularly for shark applications --- is very sensitive to network latency; very low latencies ($3-5\mu$s) are needed to avoid non-trivial performance degradation.
+
+%These workloads constitute a wide variety of application domains including off-disk batch processing (Hadoop), in-memory batch processing (Spark), graph processing (GraphLab) and point queries (memcached).
 
 %
 \begin{figure}[t]
@@ -94,44 +66,16 @@ In contrast, performance --- particularly for shark applications --- is very sen
   \label{fig:impl}
 \end{figure}
 %
-Finally, we measure how the amount of local memory impacts application performance.
-%The result of Figure~\ref{fig:latb} assumed that each CPU blade retains $25\%$ of memory capacity as local cache. We now evaluate how amount of local cache impacts the application-level performance (and hence, our conclusions) above. 
-Figure~\ref{fig:impb} plots the performance degradation that results as we vary the 
-fraction of local memory from $100\%$ (which corresponds to no CPU-memory disaggregation) down to $10\%$, assuming a fixed network latency and bandwidth of $5\mu$s and $40$Gbps respectively; note that the $25\%$ values in Figure~\ref{fig:impb} correspond to $5\mu$s, $40$Gbps results in Figure~\ref{fig:latb}. 
-As expected, we see that shark applications are more sensitive to the amount of local memory than dolphins; e.g., increasing the amount of local memory from $20\%$ to $30\%$ roughly halves the performance degradation in sharks from approximately $15\%$ to $7\%$.
-%even for $5\mu$s end-to-end latency. 
-%In contrast, dolphin applications are far less sensitive to the amount of local memory. 
-In all cases, increasing the amount of local memory beyond $40\%$ has little to no impact on performance degradation.
-
-\paragraphb{Summary of results} 
-In summary, supporting memory disaggregation while maintaining application-level performance within reasonable bounds imposes certain requirements on the network in terms of the end-to-end latency and bandwidth it must provide. Moreover, these requirements are closely related to the amount of local memory available to CPU blades. Table~\ref{tab:rmem} summarizes these requirements for the applications we studied. We specifically investigate a few combinations of network latency, bandwidth, and the amount of local memory needed to maintain a performance degradation under 5\%. 
-We highlight these design points because they represent what we consider to be sweet spots in achievable targets both for the amount of local memory and for network requirements, as we discuss next.
-
-
-
-%Next, we examine the feasibility of meeting the network requirements.
-
-\cut{ 
-to avoid  (has a more significant impact of application-level performance (Figure~\ref{fig:impl}). In particular, while shark application performance is extremely sensitive to remote memory access latency, the performance for dolphin applications can also be impacted significantly due to high latency. We use this observation below to discuss the implications and feasibility of networks for disaggregated datacenters.
-
-\paragraphb{Impact of CPU blade density}
-We start our evaluation by studying the impact of local memory on application-level performance. \rc{I am thinking about this; not sure how larger number of cores would impact the number of memory accesses!}
-
-\paragraphb{Impact of data sizes}
-We start our evaluation by studying the impact of local memory on application-level performance. \rc{I am thinking about a concise way to discuss this issue --- for Hadoop, Spark it may be easy (the number of tasks/waves increase proportionally, things should not change); for memcached and SparkSQL, unclear}
-
-Overall, we conclude that \emph{it is possible to achieve resource disaggregation with little or no impact of application-level performance if the underlying network fabric can provide an end-to-end latency of $5\mu$s (for dolphin applications) and of $3\mu$s (for shark applications) along with a $40$Gbps bandwidth links}. 
-} 
-
 %
-\begin{figure}
+\begin{figure}[h]
   \centering
     \includegraphics[width=\columnwidth]{img/vary_remote_mem.eps} 
   \caption{\small{Impact of ``local memory'' on the results of Figure~\ref{fig:latb} for end-to-end latency fixed to $5\mu$s and network bandwidth fixed to $40$Gbps. Local memory has significant impact on the performance of sharks and noticeable impact on dolphins (at least until $40\%$). Beyond $35\%$ local memory, both sharks and dolphins achieve performance within reasonable bounds. This could be reduced to $30\%$ for lower latency and/or higher bandwidth configurations (see Table~\ref{tab:rmem}).}}
   \label{fig:impb}
 \end{figure}
 %
-\begin{table}[t]
+%
+\begin{table}
     \centering
     \small
     \begin{tabular}{c|c|c}
@@ -143,13 +87,87 @@ Overall, we conclude that \emph{it is possible to achieve resource disaggregatio
     \caption{Sharks require slightly higher local memory than dolphins to be able to achieve an average performance penalty of $5\%$ for various latency-bandwidth configurations.}
     \label{tab:rmem}
 \end{table}
+%
+
+\paragraphb{Testbed}
+Each application operates on $\sim125$GB of data equally distributed across an Amazon EC2 cluster comprising of $5$ m3.2xlarge servers. Each of these servers has $8$ vCPUs, $30$GB main memory, $2 \times 80$GB SSD drives and a $1$Gbps access link bandwidth.
+We enabled EC2's Virtual Private Network (VPC~\cite{vpc}) capability in our cluster to ensure no interference with other Amazon EC2 instances. 
+ 
+We verified that m3.2xlarge instances' $1$Gbps access links were not a bottleneck to our experiment in two ways. 
+First, in all cases where the network approached full utilization, CPU was highly utilized, indicating that the CPU was not blocked on network calls.
+Next, we ran our testbed on c3.4xlarge instances with $2$Gbps access links (increased network bandwidth with roughly the same CPU). We verified that even with more bandwidth, all applications for which link utilization was high maintained high CPU utilization.
 
 %
-\begin{table*}
+\begin{figure*}[t]
+    \centering
+    \subfigure[Swap Bandwidth Utilization]{
+        \includegraphics[width=0.95\columnwidth]{img/swap_bandwidth}
+        \label{fig:swapband}
+    }
+    \subfigure[Memory Bandwidth Utilization]{
+        \includegraphics[width=0.95\columnwidth]{img/mem_bandwidth}
+        \label{fig:memband}
+    }
+    \caption{\small{\rqc{Performance degradation of applications is strongly correlated with the swap memory bandwidth and the overall memory bandwidth utilization.}}}
+    \label{fig:bandwidths11}
+\end{figure*}
+%
+
+\paragraphb{Emulating remote memory} 
+When running the above workloads, we emulate remote memory accesses by implementing a special swap device that is backed by physical memory rather than a disk. 
+This effectively partitions main memory into a ``local'' and ``remote'' portion with existing page replacement algorithms controlling when and how pages are transferred between the two; we tune the amount of ``local'' memory by configuring the size of the swap device.
+We intercept all page faults and inject artificial delays to emulate network round-trip latency and bandwidth for each paging operation. 
+
+We measure relative application-level performance on the basis of job completion time as compared to the zero-delay case. Thus, our results do not account for the delay introduced by  software overheads for page operations 
+and should be interpreted as relative performance degradation over different network configurations. %, not the absolute performance of disaggregation.
+Note too that the delay we inject is purely an artificial parameter and hence does not (for example) realistically model queueing delays that may result from network congestion caused by the extra traffic due to disaggregation; we consider network-wide traffic and effects such as congestion in \S\ref{sec:existing}.
+To compensate the performance noise on EC2, we run each experiment 10 times and take the median result.
+
+\vspace{-0.1in}
+\subsection{Results}
+\label{ssec:rr}
+\vspace{-0.05in}
+We start by evaluating application performance in a disaggregated vs. a server-centric architecture. 
+Figure~\ref{fig:latb} plots the performance degradation for each application under different assumptions about the latency and bandwidth to remote memory. In these experiments, we set the local memory in the disaggregated scenario to be  $25\%$ of that in the server-centric case (we will examine our choice of 25\% shortly). 
+
+From Figure~\ref{fig:latb}, we see that our applications can be broadly divided into two categories based on the network latency and bandwidth needed to achieve a low performance penalty.
+For example, for the applications in Fig.~\ref{fig:latb} (top) --- Hadoop Wordcount, Hadoop Sort, Graphlab and Memcached --- a network with an end-to-end latency of $5\mu$s and bandwidth of $40$Gbps is sufficient to maintain an average performance penalty under 5\%. 
+In contrast, the applications in in Fig.~\ref{fig:latb} (bottom) --- Spark Wordcount, Spark Sort, Timely, SparkSQL BDB, and HERD --- require network latencies of $3\mu$s and $40-100$Gbps bandwidth to maintain an average performance penalty under 8\%. We term the former applications {\em dolphins} and the latter {\em sharks} reflecting their more relaxed vs. demanding natures and examine the feasibility of meeting their respective requirements in \S\ref{ssec:rtt}.
+\pg{As expected, we found that Spark Streaming is memory efficient, and it does not use too much remote memory. Hence its application level degradation is near zero when latency is injected. We therefore did not plot it in Figure \ref{fig:latb}.}
+
+\paragraphb{Sensitivity analysis}
+Next, we evaluate the sensitivity of application performance to network bandwidth and latency. Fig.~\ref{fig:impbw} plots the performance degradation under increasing network bandwidth assuming a fixed network latency of $5\mu$s while Fig.~\ref{fig:impl} plots degradation under increasing latency for a fixed bandwidth of $40$Gbps; in both cases, local memory is set at $25\%$ as before.
+%nd end-to-end latency to be  and varying the bandwidth from $10$Gbps to $100$Gbps (Figure~\ref{fig:impbw}). 
+
+We see that beyond $40$Gbps, increasing network bandwidth offers little improvement in application-level performance. 
+%
+\cut{ 
+% move to later. 
+This result is in sharp contrast with existing disaggregated hardware proposals that implicitly assume the necessity of high bandwidth links using non-commodity network components (\eg, Silicon photonics~\cite{firebox, hptm, rsa}, or PCIe links~\cite{huawei}); our evaluation suggests that, for existing applications and workloads, commodity network components with $40-100$Gbps bandwidth links may be sufficient. 
+}
+%
+In contrast, performance --- particularly for shark applications --- is very sensitive to network latency; very low latencies ($3-5\mu$s) are needed to avoid non-trivial performance degradation.
+
+Finally, we measure how the amount of local memory impacts application performance.
+%The result of Figure~\ref{fig:latb} assumed that each CPU blade retains $25\%$ of memory capacity as local cache. We now evaluate how amount of local cache impacts the application-level performance (and hence, our conclusions) above. 
+Figure~\ref{fig:impb} plots the performance degradation that results as we vary the fraction of local memory from $100\%$ (which corresponds to no CPU-memory disaggregation) down to $10\%$, assuming a fixed network latency and bandwidth of $5\mu$s and $40$Gbps respectively; note that the $25\%$ values in Figure~\ref{fig:impb} correspond to $5\mu$s, $40$Gbps results in Figure~\ref{fig:latb}. 
+As expected, we see that shark applications are more sensitive to the amount of local memory than dolphins; e.g., increasing the amount of local memory from $20\%$ to $30\%$ roughly halves the performance degradation in sharks from approximately $15\%$ to $7\%$.
+%even for $5\mu$s end-to-end latency. 
+%In contrast, dolphin applications are far less sensitive to the amount of local memory. 
+In all cases, increasing the amount of local memory beyond $40\%$ has little to no impact on performance degradation.
+%
+\begin{table*}[t]
   \centering
   \begin{tabular}{c|r|r|r|r|r|r}
-		\multirow{2}{*}{\bf Component} & \multicolumn{2}{c|}{\bf Baseline} &  \multicolumn{2}{c|}{\bf With RDMA} &  \multicolumn{2}{c}{\bf With RDMA + NIC Integration}\\
-				 &  {\bf Inter-rack} &  {\bf Intra-rack} & {\bf Inter-rack} &  {\bf Intra-rack} & {\bf Inter-rack} &  {\bf Intra-rack} \\\hline	\hline
+	\multirow{2}{*}
+	    {\bf Component     } & 
+	    \multicolumn{2}{c|}{\bf Baseline ($\mu$s)} & 
+	    \multicolumn{2}{c|}{\bf With RDMA ($\mu$s)} & 
+	    \multicolumn{2}{c}{\bf With RDMA + NIC Integr. ($\mu$s)}\\
+	   	& {\bf Inter-rack} & {\bf Intra-rack} 
+	   	& {\bf Inter-rack} & {\bf Intra-rack} 
+	   	& {\bf Inter-rack} & {\bf Intra-rack} \\
+	\hline	\hline
     OS & $2 \times 0.95$ & $2 \times 0.95$ & $0$ & $0$ & $0$ & $0$\\\hline
     Data copy & $2 \times 1.00$ &  $2 \times 1.00$ & $2 \times 1.00$ & $2 \times 1.00$ & $2 \times 0.50$ & $2 \times 0.50$\\\hline
     Switching & $6 \times 0.24$ &  $2 \times 0.24$ & $6 \times 0.24$ & $2 \times 0.24$ & $6 \times 0.24$ & $2 \times 0.24$ \\\hline
@@ -167,6 +185,34 @@ Overall, we conclude that \emph{it is possible to achieve resource disaggregatio
   \label{tab:latency}
 \end{table*}
 %
+
+\paragraphb{Summary of results} 
+In summary, supporting memory disaggregation while maintaining application-level performance within reasonable bounds imposes certain requirements on the network in terms of the end-to-end latency and bandwidth it must provide. Moreover, these requirements are closely related to the amount of local memory available to CPU blades. Table~\ref{tab:rmem} summarizes these requirements for the applications we studied. We specifically investigate a few combinations of network latency, bandwidth, and the amount of local memory needed to maintain a performance degradation under 5\%. 
+We highlight these design points because they represent what we consider to be sweet spots in achievable targets both for the amount of local memory and for network requirements, as we discuss next.
+
+\rqc{
+\paragraphb{Other applications} 
+The results in Figure~\ref{fig:latb} lead to two interesting questions. First, what differentiates the dolphin applications from shark applications, and causes the variation in results across applications within a class? Second, how should one estimate the performance degradation for a new application and workload?
+
+We partially answer these questions using Figure~\ref{fig:bandwidths11}, which plots the performance degradation of the above nine workloads against their swap and memory bandwidth{\footnote{\rqc{These measurements were performed using Intel's Performance Counter Monitor software~\cite{intel-mem-count} to read the uncore performance counters in each node in our local cluster, which reflects the number of bytes written to and read from the integrated memory controller on each CPU. We confirmed using benchmarks designed to saturate memory bandwidth~\cite{mem-band-bench} that we could observe memory bandwidth utilization numbers approaching the reported theoretical maximum. As further validation, we verified that our Spark SQL measurement is consistent with prior work~\cite{georgeporter}.}}}. Figure~\ref{fig:swapband} and~\ref{fig:memband} show that the performance degradation of applications is strongly correlated with the swap and the memory bandwidth utilized by the application. While the correlation with swap bandwidth is rather intuitive, the difference between the two figures suggests that the performance degradation also depends on ``locality'', that is, the distribution of data accesses across the range of memory addresses. Measuring these access patterns and other contributing factors to performance degradation is an interesting avenue of future research.
+
+The results from Figure~\ref{fig:bandwidths11} also suggest a way to generalize our results to new applications and workloads. Specifically, one can measure the swap bandwidth \rc{note that it's easier to measure memory bandwidth?} and the overall memory bandwidth for a new application and extrapolate from the results in Figure~\ref{fig:bandwidths11} to obtain a rough estimate on performance degradation for the new application and/or workload.
+}
+
+%Next, we examine the feasibility of meeting the network requirements.
+%
+\cut{ 
+to avoid  (has a more significant impact of application-level performance (Figure~\ref{fig:impl}). In particular, while shark application performance is extremely sensitive to remote memory access latency, the performance for dolphin applications can also be impacted significantly due to high latency. We use this observation below to discuss the implications and feasibility of networks for disaggregated datacenters.
+
+\paragraphb{Impact of CPU blade density}
+We start our evaluation by studying the impact of local memory on application-level performance. \rc{I am thinking about this; not sure how larger number of cores would impact the number of memory accesses!}
+
+\paragraphb{Impact of data sizes}
+We start our evaluation by studying the impact of local memory on application-level performance. \rc{I am thinking about a concise way to discuss this issue --- for Hadoop, Spark it may be easy (the number of tasks/waves increase proportionally, things should not change); for memcached and SparkSQL, unclear}
+
+Overall, we conclude that \emph{it is possible to achieve resource disaggregation with little or no impact of application-level performance if the underlying network fabric can provide an end-to-end latency of $5\mu$s (for dolphin applications) and of $3\mu$s (for shark applications) along with a $40$Gbps bandwidth links}. 
+} 
+
 \vspace{-0.1in}
 \subsection{Implications and Feasibility}
 \label{ssec:rtt}
@@ -180,28 +226,7 @@ Next, we examine the feasibility of meeting our targets for network bandwidth an
 \paragraphb{Network bandwidth} Our bandwidth requirements are easily met: $40$Gbps is available today in commodity datacenter switches \emph{and} server NICs~\cite{40gnic}; in fact, even $100$Gbps switches and NICs are available, though not as widely~\cite{100gnic}.
 Thus, ignoring the potential effects of congestion (which we consider next in \S\ref{sec:existing}), providing the network bandwidth needed for disaggregation should pose no problem. Moreover, this should continue to be the case in the future because the trend in link bandwidths currently exceeds that in number of cores~\cite{hmc1, hmc2, hmc3}.
 
-\rc{
-    \paragraphb{Intuition for results} 
-To better understand the relative performance of the evaluated applications, we report memory bandwidth utilization using Intel's Performance Counter Monitor software~\cite{intel-mem-count} to read the uncore performance counters in each node in our local cluster, which reflects the number of bytes written to and read from the integrated memory controller on each CPU. 
-We confirmed using benchmarks designed to saturate memory bandwidth~\cite{mem-band-bench} that we could observe memory bandwidth utilization numbers approaching the reported theoretical maximum.
-As further validation, we verified that our Spark SQL measurement is consistent with prior work~\cite{georgeporter}.
 
-Our measurement, as shown in Figure~\ref{fig:bandwidths}, indicates that applications that make greater use of memory bandwidth will experience higher performance degradation in \dis. Therefore, one might instrument other applications' memory bandwidth utilization for a preview of their performance in a disaggregated environment. 
-}
-
-\begin{figure*}
-    \centering
-    \subfigure[\rc{Swap Bandwidth Utilization}]{
-        \includegraphics[width=0.95\columnwidth]{img/swap_bandwidth}
-        \label{fig:swapband}
-    }
-    \subfigure[\rc{Memory Bandwidth Utilization}]{
-        \includegraphics[width=0.95\columnwidth]{img/mem_bandwidth}
-        \label{fig:memband}
-    }
-    \caption{\small{\rc{CPU-reported memory bandwidth utilization for the eight measured applications as well as Spark Streaming. Performance degradation increases with memory bandwidth utilization.}}}
-    \label{fig:bandwidths}
-\end{figure*}
 
 \paragraphb{Network latency} The picture is less clear with respect to latency. In what follows, we consider the various components of network latency and whether they can be accommodated in our target budget of 3$\mu$secs (for sharks) to 5$\mu$secs (for dolphins).
 
@@ -238,7 +263,7 @@ Recent industry efforts pursue the integration of NIC functions closer to the CP
 As shown in column\#5 in Table~\ref{tab:latency}, the use of RDMA together with NIC integration reduces the end-to-end latency to $4.14\mu$s across racks; within a rack, this further reduces down to $2.38\mu$s (using the same differences as in column\#2 and column\#3).
 
 \paragraphb{Takeaways} We highlight a few takeaways from our analysis:
-
+%
 \begin{itemize}[leftmargin=*]
 \itemsep0em
 	\item The overhead of network \emph{software} is the key barrier to realizing disaggregation with current networking technologies. Technologies such as RDMA and integrated NICs that eliminate some of these overheads offer promise: reducing end-to-end latencies to $4.14\mu$s between racks and $2.38\mu$s within a rack. However, demonstrating such latencies in a working prototype remains an important topic for future exploration.
