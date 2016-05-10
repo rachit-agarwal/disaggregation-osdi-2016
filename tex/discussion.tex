@@ -8,15 +8,14 @@ Our study so far has focused on characterizing the network requirements for \dis
 % cite reiss?
 
 \rc{
-While most of the existing applications' performance does not degrade significantly in a DDC, we envision that applications could be rewritten to fully take advantage of disaggregation. 
-In COST~\cite{cost}, McSherry et. al. shows that current server centric architecture incurs high overhead to scale out.
-For applications such as distributed graph engines, the coordination and communication overhead is too substantial for them to benefit from parallelism.
 
 We conduct a similar experiment as COST~\cite{cost} to show that applications adapted to disaggregated environment can outperform traditional server centric ones.
-To simulate an application running in a \dis, we setup a virtual machine with 4 cores and 3GB of memory. 
+To simulate an application running in a \dis, we setup a virtual machine with 4 cores and 2GB of memory. 
 The server is capable of accessing an ``infinitely'' large remote memory pool by swapping to a RDMA-backed block device. 
+We consider this as a simulation to running apps in \dis.
 We run Pagerank and Connected Components using COST, a single thread graph compute engine over three large graph datasets.
 Since COST mmaps the input file, we store the input files into another RDMA-backed block device.
+Then two server centric cases ar
 For server centric architecture, we evaluate GraphX using a 16-node m2.4xlarge cluster on EC2. 
 Figure \ref{fig:benefit} shows the application runtime of COST-DDC and GraphX-Server Centric.
 For most of the case, COST-DDC is 1.48 to 3.04 times faster than GraphX-Server Centric, except Pagerank on UK-2007-5 dataset. 

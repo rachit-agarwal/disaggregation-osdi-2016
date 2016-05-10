@@ -39,7 +39,7 @@ in our simulated disaggregated cluster by splitting each node into one compute, 
 
 All memory and disk accesses captured above are associated with a specific address in the corresponding CPU's global virtual address space. We assume this address space is uniformly partitioned across all memory and disk blades reflecting our assumption of distributed data placement (\S\ref{ssec:system}).  
 
-One subtlety remains. Consider the disk accesses at a server $A$ in the original cluster: one might view all these disk accesses as corresponding to a flow between the compute  and disk blades corresponding to $A$ but in reality some of these disk accesses may have been issued by $A$'s CPU in response to a request from a remote server $B$ (\eg, due to a shuffle request). 
+One subtlety remains. Consider the disk accesses at a server $A$ in the original cluster: one might view all these disk accesses as corresponding to a flow between the compute  and disk blades corresponding to $A$, but in reality $A$'s CPU may have issued some of these disk accesses in response to a request from a remote server $B$ (\eg, due to a shuffle request). 
 In the disaggregated cluster, this access should be treated as a network flow between \emph{$B$}'s compute blade and $A$'s disk blade %SR:OSDI-CUT (i.e., the compute blade obtained by disaggregating server B and the disk blade that corresponds to disaggregating A).
 
 To correctly attribute accesses to the CPU that originates the request, we match network and disk traces across the cluster -- e.g., matching the network traffic between $B$ and $A$ to the disk traffic at $A$ -- using a heuristic based on both the timestamps and volume of data transferred. 
@@ -110,7 +110,7 @@ We observed similar results in our simulation of rack-scale disaggregation (grap
 
 Second, we note that while pFabric and pHost perform comparably, Fastpass fares worse; this is consistent with the findings reported in~\cite{phost}.
 
-Finally, we  repeat the above simulations but this time simulate rack-scale 
+Finally, we repeat the above simulations but this time simulate rack-scale 
 disaggregation; \ie, a CPU blade's associated memory and disk blades are selected from 
 its own rack. The results are shown in Figure~\ref{fig:phostp}. We see that, with the exception of Fastpass, rack-scale disaggregation does not significantly alter the slowdown values. (Fastpass fares worse with rack-scale disaggregation because the centralized scheduler is not rack-local and hence the cost of contacting the scheduler is relatively greater.)
 However, one should not conclude from this that rack-scale containment is not useful because our slowdown metric masks differences in the \emph{absolute} FCT values. Instead, slowdown is useful primarily to compare across different transport protocol designs. The impact of these absolute FCT values is captured in our next experiments.
@@ -212,7 +212,7 @@ assume that all of swapin\_readahead is a ``disk access''. This is due to the fa
 that we cannot neatly instrument inside swapin\_readahead in the same manner
 since it returns a pointer.
 
-Overall, our measurement code introduces a very small 5$\mu$s number of bitwise
+Overall, our measurement code introduces a very small number of bitwise
 operations (ANDs, ORs, shifts), one integer subtraction, and four calls to
 \texttt{ktime\_get} into the handler, which together have a negligible impact on
 measurements.
