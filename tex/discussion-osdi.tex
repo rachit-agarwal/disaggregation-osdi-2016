@@ -11,7 +11,7 @@ We present early results investigating the above with the intent of demonstratin
 \vspace{-0.1in}
 \subsection{Implementing remote memory access}
 \vspace{-0.05in}
-We previously identified an end-to-end latency target of 3-5us for \dis that we argued could be met with RDMA. The (promising) RDMA latencies in \S\ref{sec:existing} are as reported by native RDMA-based applications. 
+subtractWe previously identified an end-to-end latency target of 3-5us for \dis that we argued could be met with RDMA. The (promising) RDMA latencies in \S\ref{sec:existing} are as reported by native RDMA-based applications. 
 We were curious about the feasibility of realizing these latencies if we were to retain our architecture from the previous section in which remote memory is accessed as a special swap device as this would provide a simple and transparent approach to utilizing remote memory. 
 
 We thus built a kernel space RDMA block device driver which serves as a swap device; \ie, the local CPU can now swap to remote memory instead of disk.
