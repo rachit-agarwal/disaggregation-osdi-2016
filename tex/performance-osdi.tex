@@ -106,7 +106,7 @@ studies from existing datacenters). In our \dis workload, reflecting the
 application-driven nature of our workload, we observe many flow arrivals that 
 appear very close in time (only observable on sub-10s of microsecond timescales), leading to high slowdowns for these flows. This effect is strongest in the case of the wordcount application which is why it suffers the highest slowdowns. 
 We observed similar results in our simulation of rack-scale disaggregation (graph omitted).
-
+%
 \eat{
 %SR: OSDI-CUT
 
@@ -117,19 +117,21 @@ disaggregation; \ie, a CPU blade's associated memory and disk blades are selecte
 its own rack. The results are shown in Figure~\ref{fig:phostp}. We see that, with the exception of Fastpass, rack-scale disaggregation does not significantly alter the slowdown values. (Fastpass fares worse with rack-scale disaggregation because the centralized scheduler is not rack-local and hence the cost of contacting the scheduler is relatively greater.)
 However, one should not conclude from this that rack-scale containment is not useful because our slowdown metric masks differences in the \emph{absolute} FCT values. Instead, slowdown is useful primarily to compare across different transport protocol designs. The impact of these absolute FCT values is captured in our next experiments.
 }
-
+%
 %\vspace{-0.1in}
 \subsection{Application-level performance}
 \label{ssec:alp}
 %\vspace{-0.05in}
-We now use the FCTs obtained from the above simulations as the memory access times in our emulation methodology from \S\ref{sec:requirements}. We use the FCTs from pFabric as it achieves the best slowdowns over a range of test scenarios. 
+We now use the pFabric FCTs obtained from the above simulations as the memory access times in our emulation methodology from \S\ref{sec:requirements}. 
+%We use the FCTs from pFabric as it achieves the best slowdowns over a range of test scenarios. 
 
 We measure the degradation in application performance that results from injecting remote memory access times drawn from the FCTs that pFabric achieves with 40Gbps links and with 100Gbps links, in each case considering both datacenter-wide and rack-scale disaggregation. As in \S\ref{sec:requirements}, we measure performance degradation compared to the baseline of performance without disaggregation (i.e., injecting zero latency). 
 
-In all cases, we find that the inclusion of queueing delay \emph{does} have a non-trivial impact on performance degradation -- typically increasing the performance degradation relative to the case of zero-queueing delay by between 2-3x. 
-Figure~\ref{fig:appfabric100} plots the performance degradation for 100Gbps links: we see that degradation ranges between 1-8.5\% on average with datacenter scale disaggregation, and containment to a rack lowers the degradation to between 0.4-3.5\% on average. In topologies with 40Gbps links, we find a average performance degradation of 14\% with datacenter-scale disaggregation and 11\% with rack-scale disaggregation (figure not shown). 
-This leads us to conclude that 100Gbps links are both required and sufficient to contain the performance impact of queueing delay.
+In all cases, we find that the inclusion of queueing delay \emph{does} have a non-trivial impact on performance degradation at 40 Gbps -- typically increasing the performance degradation relative to the case of zero-queueing delay by between 2-3x, with an average performance degradation of 14\% with datacenter-scale disaggregation and 11\% with rack-scale disaggregation. 
 
+With 100Gbps links, we see (in Figure~\ref{fig:appfabric100}) that the performance degradation ranges between 1-8.5\% on average with datacenter scale disaggregation, and containment to a rack lowers the degradation to between 0.4-3.5\% on average.
+This leads us to conclude that 100Gbps links are both required and sufficient to contain the performance impact of queueing delay.
+%
 %
 \begin{figure}
   \centering

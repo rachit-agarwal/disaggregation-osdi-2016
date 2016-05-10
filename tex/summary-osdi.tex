@@ -1,7 +1,7 @@
-\vspace{-0.1in}
+%\vspace{-0.1in}
 \section{Disaggregated Datacenters}
 \label{sec:summary}
-\vspace{-0.05in}
+%\vspace{-0.05in}
 
 %\rc{cut: background subsection, folded into 2.1 and section intro}
 
@@ -30,11 +30,11 @@ Many of these systems are proprietary and/or in the early stages of development;
 In this section, we present our assumptions regarding the hardware (\S\ref{ssec:hardware}) and system (\S\ref{ssec:system}) architecture in a disaggregated datacenter.
 We close the section by summarizing the key open design choices that remain after our assumptions (\S\ref{ssec:knobs}); we treat these as design `knobs' in our evaluation.
 
-\vspace{-0.1in}
+%\vspace{-0.1in}
 \subsection{Assumptions: Hardware Architecture}
-\vspace{-0.05in}
+%\vspace{-0.05in}
 \label{ssec:hardware}
-
+%
 \paragraphb{(1) Partial CPU-memory disaggregation} 
 In general, disaggregation suggests that each blade contains one particular resource with a direct interface to the network fabric (Fig.~\ref{fig:dc}). 
 One exception to this strict decoupling are CPU blades: each CPU blade retains some amount of \emph{local} memory that acts as a cache for remote memory dedicated for cores on that blade\footnote{We use ``remote memory'' to refer to the memory located on a standalone memory blade.}.
@@ -92,11 +92,11 @@ First, these are both choices that appear to be motivated not by fundamental con
 Second, these choices are likely to complicate or delay the deployment of \dis. The use of a different network architecture within vs. between disaggregated islands leads to the complexity of a two-tier heterogeneous network architecture with different protocols, configuration APIs, etc., for each; e.g., in the context of their Firebox system, the authors envisage the use of special gateway devices that translate between their custom intra-Firebox protocols and TCP/IP that is used between Firebox systems; Huawei's DC3.0 makes similar assumptions. Likewise, many of the specialized technologies these systems use (e.g., Si-photonics~\cite{vladimir-nature}) are still far from mainstream. 
 Hence, once again, rather than assume change is necessary, we evaluate the possibility of maintaining a uniform ``flat'' network architecture based on existing commodity components as advocated in prior work~\cite{el-fares,vl2,greenberg-costs}. 
 %
-
-
-\vspace{-0.1in}
+%
+%
+%\vspace{-0.1in}
 \subsection{Assumptions: System Architecture}
-\vspace{-0.05in}
+%\vspace{-0.05in}
 \label{ssec:system}
 In contrast to our assumptions regarding hardware which we based on existing  prototypes, we have less to guide us on the systems front. We thus make the following assumptions, which we believe are reasonable: 
 
@@ -123,11 +123,11 @@ Note that this assumption constitutes a bad-case scenario for our study since it
 
 \paragraphb{Block-level distributed data placement}
 We assume that applications in \dis read and write large files at the granularity of ``sectors'' ($512$B in x86). Furthermore, the disk block address space is range partitioned into ``blocks'', that are uniformly distributed across the disk blades. The latter is partially motivated by existing distributed file systems (\eg, HDFS) and also enables better load balancing. % because this spreads load. 
-
-\vspace{-0.1in}
+%
+%\vspace{-0.1in}
 \subsection{Design knobs}
 \label{ssec:knobs}
-\vspace{-0.05in}
+%\vspace{-0.05in}
 Given the above assumptions, we are left with two key system design choices that we treat as ``knobs'' in our study: {\em the amount of local memory on compute blades} and  {\em the scope of disaggregation} (e.g., rack- or datacenter-scale). We will explore how varying these knobs impacts the network requirements and traffic characteristics in \dis. 
 
 The remainder of this paper is organized as follows. We first analyze network-layer bandwidth and latency requirements in \dis(\S\ref{sec:requirements}) \emph{without} considering contention between network flows, then in \S\ref{sec:existing} relax this constraint. We end with a discussion of the future directions in \S\ref{sec:future}.
