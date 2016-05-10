@@ -70,55 +70,7 @@ topology with 9 racks and a full bisection bandwidth Clos topology with $36$KB b
 %: 20 ns within a rack, 200ns for aggregation links, and a switching delay of 200ns per hop. 
 We evaluate five protocols; in each case, we set protocol-specific parameters following the default settings but adapted to our bandwidth-delay product as recommended. Two protocols, TCP and DCTCP~\cite{dctcp}, see wide adoption today; the remaining three --- pFabric~\cite{pfabric}, pHost~\cite{phost}, and Fastpass~\cite{fastpass} --- are recent research proposals.
 
-\eat{ 
-%SR: OSDI-CUT
-\begin{figure}
-  \centering
-%   \subfigure{
-%     \includegraphics[width = 4in]{img/slowdowns/100g/loadcdf} 
-%   }
-%   \subfigure{
-%     \includegraphics[width = 4in]{img/slowdowns/40g/loadcdf} 
-%   }
-  \includegraphics[width = \columnwidth]{img/load} 
-  \caption{\small{Per-link load in each application. Among hosts, for each application there is significant variance in the load injected. This highlights the skewness of our traffic matrix.}}
-  \label{fig:loadcdf}
-\end{figure}
-}
-
-
-\cut{
-\paragraphb{Traffic Generation}
-As mentioned above, the disaggregated datacenter we simulate includes %$144$ nodes.
-9 racks. Reflecting our EC2 testbed with 5 servers, we populate each rack with  5 CPU blades, 5 memory blades and 5 storage blades.
-%per cluster. The remaining 9 nodes are unused.
-%Each CPU blade is associated with 12 remote memory and disk blades (i.e., the `VM' abstraction in our simulation comprises one CPU whose memory and disk address space is spread across 12 remote blades). 
-To simulate rack-local clusters each rack is treated as a disaggregated cluster. 
-To simulate datacenter-scale clusters, blades across the 9 racks are grouped uniformly into clusters of 15.
-In the traditional datacenter topology, a single endpoint corresponds to one server blade that includes one unit each of CPU, memory \emph{and} disk. In contrast, in the disaggregated topology, a single endpoint corresponds to three units of a single resource; i.e., 3x of CPU, disk \emph{or} memory. This ensures we maintain resource parity between the traditional datacenter topology and our disaggregated one.
-
-
-%given that a traditional datacenter with our topology would contain 144 each of compute, memory, and storage blades, we pack each endpoint in our simulated topology with 3 of the given resource to maintain resource parity.
-
-
-
-Given our topology, we generate traffic for each disaggregated cluster as follows. From our workload traffic traces, we generate CDFs representing the various distributions of flow sizes and flow inter-arrival times for each source-destination pair in the cluster (note that there is no direct traffic between memory and storage blades, nor between compute blades).
-%, for a total of 100 possible size and interarrival time CDF pairs 
-Each endpoint in our topology is designated as a CPU, memory or disk blade and 
-generates traffic by drawing from the CDFs corresponding to its resource type.
-%we assign it an identity as one of our 15 disaggregated blades within its cluster and 
-%draw from the appropriate CDFs to generate flows to each of the other blades in the cluster.
-Since we pack resources by a factor of 3, each endpoint independently draws from its flow generation distributions three times. 
-%SR: OSDI-CUT The resulting injected load can be seen in Figure~\ref{fig:loadcdf}. 
-%\an{Note that with a $40$Gbps link bandwidth, load on some sources approaches 0.8}. 
-
-}
-
-\paragraphb{Traffic Generation}
-We simulate a disaggregated datacenter under two settings in a datacenter with 144 nodes.
-In rack-scale disaggregation, CPUs blades only talk to memory and disk blades located on the same rack.
-In datacenter-scale disaggregation, CPUs blades can talk to any resources across the entire datacenter.
-We generate flows by drawing from the CDFs corresponding to its resource type.
+We evaluate both rack-scale and datacenter-scale traffic generation, where communicating nodes are constrained to be within a rack and unconstrained, respectively.
 
 \vspace{-0.1in}
 \subsection{Network-level performance}
@@ -169,15 +121,11 @@ We now use the FCTs obtained from the above simulations as the memory access tim
   \label{fig:phostp}
 \end{figure}
 
-
 We measure the degradation in application performance that results from injecting remote memory access times drawn from the FCTs that pFabric achieves with 40Gbps links and with 100Gbps links, in each case considering both datacenter-wide and rack-scale disaggregation. As in \S\ref{sec:requirements}, we measure performance degradation compared to the baseline of performance without disaggregation (i.e., injecting zero latency). 
 
 In all cases, we find that the inclusion of queueing delay \emph{does} have a non-trivial impact on performance degradation -- typically increasing the performance degradation relative to the case of zero-queueing delay by between 2-3x. 
 Figure~\ref{fig:appfabric100} plots the performance degradation for 100Gbps links: we see that degradation ranges between 1-8.5\% on average with datacenter scale disaggregation, and containment to a rack lowers the degradation to between 0.4-3.5\% on average. In topologies with 40Gbps links, we find a median performance degradation of 17\% with datacenter-scale disaggregation (figure not shown). 
 This leads us to conclude that 100Gbps links are both required and sufficient to contain the performance impact of queueing delay.
-
-
-
 
 %
 \begin{figure}
@@ -233,7 +181,7 @@ We setup the block device as swap space and run the \rc{5} applications evaluate
 
 }
 \rc{
-\paragraphb{Measuring page fault latency}
+\paragraphb{Measuring swap latency}
 We measured the software overhead of swapping on a commodity desktop running
 Linux 3.13.0. In order to do so, we needed to collect two data points with
 minimal modifications to the codebase --- the overall time spent in the page
