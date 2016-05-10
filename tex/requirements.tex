@@ -177,15 +177,17 @@ Thus, ignoring the potential effects of congestion (which we consider next in \S
 
 \rc{
     \paragraphb{Intuition for results} 
-In order to better understand the memory bandwidth utilization of each application, we used Intel's Performance Counter Monitor software~\cite{intel-mem-count} to read the uncore performance counters in each node in our local cluster, which reflects the number of bytes written to and read from the integrated memory controller on each CPU. The resulting correlation is in Figure~\ref{fig:memband}. 
-To validate our measurement methodology, we confirmed that we could observe memory bandwidth utilization numbers near the theoretical maximums reported by Intel using benchmarks designed to saturate memory bandwidth~\cite{mem-band-bench}.
-\rc{PG: Our Spark SQL numbers are also consistent with the measurement did in ~\cite{georgeporter}}
+To better understand the relative performance of the evaluated applications, we report memory bandwidth utilization using Intel's Performance Counter Monitor software~\cite{intel-mem-count} to read the uncore performance counters in each node in our local cluster, which reflects the number of bytes written to and read from the integrated memory controller on each CPU. 
+We confirmed using benchmarks designed to saturate memory bandwidth~\cite{mem-band-bench} that we could observe memory bandwidth utilization numbers approaching the reported theoretical maximum.
+As further validation, we verified that our Spark SQL measurement is consistent with prior work~\cite{georgeporter}.
+
+Our measurement, as shown in Figure~\ref{fig:memband}, indicates that applications that make greater use of memory bandwidth will experience higher performance degradation in \dis. Therefore, one might instrument other applications' memory bandwidth utilization for a preview of their performance in a disaggregated environment. 
 }
 
 \begin{figure}
   \centering
     \includegraphics[width=\columnwidth]{img/mem_bandwidth.pdf} 
-    \caption{\small{\rc{memory bandwidth caption}}}
+    \caption{\small{\rc{CPU-reported memory bandwidth utilization for the eight measured applications as well as Spark Streaming. Performance degradation increases with memory bandwidth utilization.}}}
   \label{fig:memband}
 \end{figure}
 
