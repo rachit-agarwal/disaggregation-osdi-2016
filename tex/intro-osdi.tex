@@ -27,8 +27,8 @@ This paper takes a first step towards addressing these questions. That is, rathe
 }
 }
 
-We evaluate these minimum network requirements in the context of ten workloads spanning seven popular open-source systems --- Hadoop, Spark, GraphLab, Timely dataflow~\cite{timely-dataflow, timely-dataflow1}, Spark Streaming, memcached~\cite{memcached}, HERD~\cite{herd}, and SparkSQL. 
-\eat{off-disk batch processing using Hadoop, in-memory batch processing using Spark, distributed graph processing using GraphLab, highly  optimized graph processing using Timely dataflow~\cite{timely-dataflow, timely-dataflow1}, stream processing using Spark Streaming, point queries with memcached~\cite{memcached} and HERD~\cite{herd}, and an optimized in-memory SQL engine SparkSQL. 
+We evaluate these minimum network requirements in the context of ten workloads spanning seven popular open-source systems --- Hadoop, Spark, GraphLab, Timely dataflow~\cite{timely-dataflow, timely-dataflow1}, Spark Streaming, memcached~\cite{memcached}, HERD~\cite{herd}, and SparkSQL\@. 
+\eat{off-disk batch processing using Hadoop, in-memory batch processing using Spark, distributed graph processing using GraphLab, highly  optimized graph processing using Timely dataflow~\cite{timely-dataflow, timely-dataflow1}, stream processing using Spark Streaming, point queries with memcached~\cite{memcached} and HERD~\cite{herd}, and an optimized in-memory SQL engine SparkSQL\@. 
 }
 As we elaborate on in \S\ref{sec:requirements}, we focus on current applications such as the above because they represent the worst case in terms of the application \emph{degradation} that may result from disaggregation. 
 
@@ -43,7 +43,7 @@ As we elaborate on in \S\ref{sec:requirements}, we focus on current applications
 	}
 	}
 	%
-	\item Network latency in the range of $3-5\mu$s is needed to maintain application-level performance. This is a challenging task. Our analysis suggests that the primary latency bottleneck stems from  network software rather than hardware: we find the latency introduced by the endpoint is roughly $66\%$ of the inter-rack latency and roughly $81\%$ of the intra-rack latency. Thus many of the optimizations being pursued by switch hardware architects~\cite{mellanox} optimize the relatively smaller fraction of the overall latency budget; instead, work on bypassing the kernel for packet processing and NIC integration~\cite{cpu-nic} could significantly impact the feasibility of resource disaggregation.
+	\item Network latency in the range of $3-5\mu$s is needed to maintain application-level performance. This is a challenging task. Our analysis suggests that the primary latency bottleneck stems from  network software rather than hardware: we find the latency introduced by the endpoint is roughly $66\%$ of the inter-rack latency and roughly $81\%$ of the intra-rack latency. Thus many of the optimizations switch hardware architects are pursuing~\cite{mellanox} optimize a relatively smaller fraction of the overall latency budget; instead, work on bypassing the kernel for packet processing and NIC integration~\cite{cpu-nic} could significantly impact the feasibility of resource disaggregation.
 	%
 	\item We show that the above requirements follow from the memory bandwidth demands of applications.
 	\item While most efforts focus on disaggregating at the rack scale, our results show that for many applications disaggregation at the datacenter scale is entirely feasible.	%
@@ -55,7 +55,7 @@ Taken together, our study suggests that resource disaggregation need not be gate
 %and in many cases can be applied across the datacenter, not just within a rack. 
 %Our findings are thus in contrast with many industrial or commercial efforts that rely on new network designs and technologies, or focus only on rack-scale disaggregation.
 
-There are two important caveats to this.  First, while we may not need network changes, we will need changes in hosts, for which RDMA and NIC integration (for hardware) and pFabric or pHost (for transport protocols) are promising directions. Second, our point is not that new networking technologies are not worth pursuing but that the adoption of disaggregation \emph{need not be coupled} to the deployment of these new technologies. Instead, early efforts at disaggregation can begin with existing network technologies and the newer technologies can be incorporated as and when it makes sense from a performance, cost, and power standpoint.
+There are two important caveats to this.  First, while we may not need network changes, we will need changes in hosts, for which RDMA and NIC integration (for hardware) and pFabric or pHost (for transport protocols) are promising directions. Second, our point is not that new networking technologies are not worth pursuing but that the adoption of disaggregation \emph{need not be coupled} to the deployment of these new technologies. Instead, early efforts at disaggregation can begin with existing network technologies and system builders can incorporate the newer technologies as and when it makes sense from a performance, cost, and power standpoint.
 %Likewise, re-architect existing applications to exploit \dis for better performance (e.g., by leveraging remote memory) 
 
 Before continuing, we note three limitations of our work. First, our results are based on ten specific workloads spanning seven open-source systems with varying designs; we leave to future work an evaluation of whether our results generalize to other systems and workloads.
