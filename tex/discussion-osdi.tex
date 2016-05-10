@@ -9,30 +9,21 @@ Our results in this section are merely intended to demonstrate the potential for
 
 
 \vspace{-0.1in}
-\subsection{Achieving low-latency remote memory accesses}
+\subsection{Implementing low-latency remote memory access}
 \vspace{-0.05in}
-We previous identified an end-to-end latency target of 3-5us for \dis and argued for the use of  RDMA to meet this target. The (promising) RDMA latencies we assumed in \S\ref{sec:existing} were based 
-on measurements reported by native RDMA-based applications. 
-We were curious about the feasibility of realizing these latencies by leveraging 
+We previous identified an end-to-end latency target of 3-5us for \dis and argued for the use of  RDMA to meet this target. The (promising) RDMA latencies we assumed in \S\ref{sec:existing} were based on measurements reported by native RDMA-based applications. 
+We were curious about the feasibility of realizing these latencies if we were to retain our 
+architecture from the previous section in which remote memory is accessed as a special swap device as this would provide a simple and transparent approach to utilizing remote memory. 
 
+We thus built a kernel space RDMA block device driver which serves as a swap device; i.e., the local CPU can now swap to remote memory instead of disk.
+We implemented the block device driver on a machine with Mellanox  4xFDR Infiniband card.
+We test the block device throughput using \textit{dd} with direct IO, and measure the request latency by instrumenting the driver code. 
+The end-to-end latency of our approach includes the RDMA request latency and the latency introduced by the kernel swap itself. We focus on each in turn. 
 
-
-%As we have established in the previously section, a DDC requires 100Gbps bandwidth and 3-5us end-to-end latency. 
-%Current datacenter network usually has 20us network latency, and by our analysis, 5-7us of end-to-end latency is within reach. 
-%If we enable RDMA inside the datacenter, which takes aways the overhead at OS layer, we can get latency as low as 3-5us. 
-We validate this by building a kernel space RDMA block device driver, and use this block device driver as the swap device.
-With the RDMA block device driver, the local machine can swap to remote memory instead of swapping to disk.
-
-We implement the block device driver on a machine with Mellanox  4xFDR Infiniband card.
-To maintain high throughput, we first use a batch implementation that batches block requests and sends all of them together to the RDMA NIC.
-The driver waits for all the request to come back and notify the upper layer.
-We test the block device throughput using \textit{dd} with direct IO, and measure the request latency by instrumenting the driver code.
-The block device throughput is only 0.8GB/s and the latency is around 4-16us.
-We observed that many block requests are actually contiguous in address, so we merge these request in to one large request. 
-With request merging, the throughput becomes 2.6GB/s, which is ~3x better than the batch version. 
-The performance of the block device driver can be further improved by issuing RDMA requests asynchronously.
-We create a data structure to keep track of all the out going requests and notify the upper layer immediately for each completed request.
-This improves the throughput to 3.3GB/s which is as high as a local RamFS, and reduces the request latency to 3-4us (Table \ref{tab:rdma_latency}).
+\paragraph{RDMA request latency.} A few optimizations were necessary to improve RDMA performance in our context. First, we batch block requests to be sent to the RDMA NIC and the driver waits for all the requests to return before notifying the upper layer: this gave a block device throughput of only 0.8GB/s and latency around 4-16us.
+Next, we observed that many block requests have contiguous addresses and hence merge these requests into a single large request: this improved throughput to 2.6GB/s (a ~3x improvement).
+Finally, we improved performance by issuing RDMA requests asynchronously. We created a data structure to keep track of all outgoing requests and notify the upper layer immediately for each completed request: this improves the throughput to 3.3GB/s which is as high as a local RamFS, and reduces the request latency to 3-4us (Table \ref{tab:rdma_latency}). 
+This latency is within 2x of request latencies reported by native RDMA applications which we view as encouraging given the simplicity of the design and that additional optimizations are likely possible.
 
 \begin{table}[t]
     \centering
@@ -52,6 +43,7 @@ We enable the NUMA\_EMU feature in Linux kernel, which partitions the memory int
 This improves the throughput of swapping out memory pages.
 
 
+\eat{
 The RDMA block device driver provides us a simple and efficient way utilize remote memory. 
 We setup the block device as swap space and run the \rc{5} applications evaluated in \S \ref{sec:requirements} with lower latency requirements.
 \rc{waiting for joao's results}

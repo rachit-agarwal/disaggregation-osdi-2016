@@ -13,7 +13,7 @@ If we enable RDMA inside the datacenter, which takes aways the overhead at OS la
 We validate this by building a kernel space RDMA block device driver, and use this block device driver as the swap device.
 With the RDMA block device driver, the local machine can swap to remote memory instead of swapping to disk.
 
-We implement the block device driver on a machine with Mellanox  4xFDR Infiniband card.
+We implement the block device driver on a machine with Mellanox 4xFDR Infiniband card.
 To maintain high throughput, we first use a batch implementation that batches block requests and sends all of them together to the RDMA NIC.
 The driver waits for all the request to come back and notify the upper layer.
 We test the block device throughput using \textit{dd} with direct IO, and measure the request latency by instrumenting the driver code.

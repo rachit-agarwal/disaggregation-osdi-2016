@@ -156,6 +156,29 @@ In all cases, increasing the amount of local memory beyond $40\%$ has little to 
 In summary, supporting memory disaggregation while maintaining application-level performance within reasonable bounds imposes certain requirements on the network in terms of the end-to-end latency and bandwidth it must provide. Moreover, these requirements are closely related to the amount of local memory available to CPU blades. Table~\ref{tab:rmem} summarizes these requirements for the applications we studied. We specifically investigate a few combinations of network latency, bandwidth, and the amount of local memory needed to maintain a performance degradation under 5\%. 
 We highlight these design points because they represent what we consider to be sweet spots in achievable targets both for the amount of local memory and for network requirements, as we discuss next.
 
+\rqc{
+\paragraphb{Other applications} 
+The results in Figure~\ref{fig:latb} lead to two interesting questions. First, what differentiates the dolphin applications from shark applications, and causes the variation in results across applications within a class? Second, how should one estimate the performance degradation for a new application and workload?
+
+We partially answer these questions using Figure~\ref{fig:bandwidths11}, which plots the performance degradation of the above nine workloads against their swap and memory bandwidth{\footnote{\rqc{We performed these measurements using Intel's Performance Counter Monitor software~\cite{intel-mem-count} to read the uncore performance counters in each node in our local cluster, which reflects the number of bytes written to and read from the integrated memory controller on each CPU. We confirmed using benchmarks designed to saturate memory bandwidth~\cite{mem-band-bench} that we could observe memory bandwidth utilization numbers approaching the reported theoretical maximum. As further validation, we verified that our Spark SQL measurement is consistent with prior work~\cite{georgeporter}.}}}. Figure~\ref{fig:swapband} and~\ref{fig:memband} show that the performance degradation of applications is strongly correlated with the swap and the memory bandwidth utilized by the application. While the correlation with swap bandwidth is rather intuitive, the difference between the two figures suggests that the performance degradation also depends on ``locality'', that is, the distribution of data accesses across the range of memory addresses. Measuring these access patterns and other contributing factors to performance degradation is an interesting avenue of future research.
+
+The results from Figure~\ref{fig:bandwidths11} also suggest a way to generalize our results to new applications and workloads. Specifically, one can measure the swap bandwidth \rc{note that it's easier to measure memory bandwidth?} and the overall memory bandwidth for a new application and extrapolate from the results in Figure~\ref{fig:bandwidths11} to obtain a rough estimate on performance degradation for the new application and/or workload.
+}
+
+%Next, we examine the feasibility of meeting the network requirements.
+%
+\cut{ 
+to avoid  (has a more significant impact of application-level performance (Figure~\ref{fig:impl}). In particular, while shark application performance is extremely sensitive to remote memory access latency, the performance for dolphin applications can also be impacted significantly due to high latency. We use this observation below to discuss the implications and feasibility of networks for disaggregated datacenters.
+
+\paragraphb{Impact of CPU blade density}
+We start our evaluation by studying the impact of local memory on application-level performance. \rc{I am thinking about this; not sure how larger number of cores would impact the number of memory accesses!}
+
+\paragraphb{Impact of data sizes}
+We start our evaluation by studying the impact of local memory on application-level performance. \rc{I am thinking about a concise way to discuss this issue --- for Hadoop, Spark it may be easy (the number of tasks/waves increase proportionally, things should not change); for memcached and SparkSQL, unclear}
+
+Overall, we conclude that \emph{it is possible to achieve resource disaggregation with little or no impact of application-level performance if the underlying network fabric can provide an end-to-end latency of $5\mu$s (for dolphin applications) and of $3\mu$s (for shark applications) along with a $40$Gbps bandwidth links}. 
+} 
+
 %
 \begin{table*}[t]
   \centering
@@ -186,29 +209,6 @@ We highlight these design points because they represent what we consider to be s
   \label{tab:latency}
 \end{table*}
 %
-\rqc{
-\paragraphb{Other applications} 
-The results in Figure~\ref{fig:latb} lead to two interesting questions. First, what differentiates the dolphin applications from shark applications, and causes the variation in results across applications within a class? Second, how should one estimate the performance degradation for a new application and workload?
-
-We partially answer these questions using Figure~\ref{fig:bandwidths11}, which plots the performance degradation of the above nine workloads against their swap and memory bandwidth{\footnote{\rqc{We performed these measurements using Intel's Performance Counter Monitor software~\cite{intel-mem-count} to read the uncore performance counters in each node in our local cluster, which reflects the number of bytes written to and read from the integrated memory controller on each CPU. We confirmed using benchmarks designed to saturate memory bandwidth~\cite{mem-band-bench} that we could observe memory bandwidth utilization numbers approaching the reported theoretical maximum. As further validation, we verified that our Spark SQL measurement is consistent with prior work~\cite{georgeporter}.}}}. Figure~\ref{fig:swapband} and~\ref{fig:memband} show that the performance degradation of applications is strongly correlated with the swap and the memory bandwidth utilized by the application. While the correlation with swap bandwidth is rather intuitive, the difference between the two figures suggests that the performance degradation also depends on ``locality'', that is, the distribution of data accesses across the range of memory addresses. Measuring these access patterns and other contributing factors to performance degradation is an interesting avenue of future research.
-
-The results from Figure~\ref{fig:bandwidths11} also suggest a way to generalize our results to new applications and workloads. Specifically, one can measure the swap bandwidth \rc{note that it's easier to measure memory bandwidth?} and the overall memory bandwidth for a new application and extrapolate from the results in Figure~\ref{fig:bandwidths11} to obtain a rough estimate on performance degradation for the new application and/or workload.
-}
-
-%Next, we examine the feasibility of meeting the network requirements.
-%
-\cut{ 
-to avoid  (has a more significant impact of application-level performance (Figure~\ref{fig:impl}). In particular, while shark application performance is extremely sensitive to remote memory access latency, the performance for dolphin applications can also be impacted significantly due to high latency. We use this observation below to discuss the implications and feasibility of networks for disaggregated datacenters.
-
-\paragraphb{Impact of CPU blade density}
-We start our evaluation by studying the impact of local memory on application-level performance. \rc{I am thinking about this; not sure how larger number of cores would impact the number of memory accesses!}
-
-\paragraphb{Impact of data sizes}
-We start our evaluation by studying the impact of local memory on application-level performance. \rc{I am thinking about a concise way to discuss this issue --- for Hadoop, Spark it may be easy (the number of tasks/waves increase proportionally, things should not change); for memcached and SparkSQL, unclear}
-
-Overall, we conclude that \emph{it is possible to achieve resource disaggregation with little or no impact of application-level performance if the underlying network fabric can provide an end-to-end latency of $5\mu$s (for dolphin applications) and of $3\mu$s (for shark applications) along with a $40$Gbps bandwidth links}. 
-} 
-
 \vspace{-0.1in}
 \subsection{Implications and Feasibility}
 \label{ssec:rtt}
