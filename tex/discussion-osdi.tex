@@ -88,7 +88,7 @@ First, to model an application running in a \dis, we set up a virtual machine wi
 Next, we consider two scenarios that represent server-centric architecture.
 One is a server with 4 cores and 8GB of local memory (25\% larger than the \dis case as in previous sections) and an ``infinitely'' large local SSD swap -- this represents the COST baseline in a server-centric context. 
 Second, we evaluate GraphX using a 16-node m2.4x large cluster on EC2 -- this represents the scale-out approach in current server-centric architecture.
-We run Pagerank and Connected Components using COST, a single-thread graph compute engine over three large graph datasets. COST mmaps the input file, so we store the input files on another RDMA-backed block device.
+We run Pagerank and Connected Components using COST, a single-thread graph compute engine over three large graph datasets. COST \texttt{mmaps} the input file, so we store the input files on another RDMA-backed block device.
 Figure \ref{fig:benefit} shows the application runtime of COST-DDC, COST-SSD and GraphX-Server Centric.
 In all but one case, COST-DDC is 1.48 to 2.05 times faster than the GraphX (server-centric) scenario and slightly better than the server-centric COST scenario (the improvement over the latter grows with increasing data set size). Performance is worse for Pagerank on the UK-2007-5 dataset, consistent with the results in ~\cite{cost} because the graph in this case is more easily partitioned. 
 
