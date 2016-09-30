@@ -1,21 +1,21 @@
-\vspace{-0.1in}
+
 \section{Future Directions}
 \label{sec:future}
-\vspace{-0.05in}
+
 
 So far, we used emulation and simulation to evaluate the minimum network requirements for  disaggregation.%, with a focus on minimizing degradation in application performance. 
 This opens two directions for future work: (1) demonstrating an end-to-end system implementation of remote memory access that meets our latency targets, and (2) investigating programming models that actively exploit disaggregation to \emph{improve} performance.
 We present early results investigating the above with the intent of demonstrating the potential for realizing positive results to the above questions: each topic merits an in-depth exploration that is out of scope for this paper.
 
 
-\vspace{-0.1in}
+
 \subsection{Implementing remote memory access}
-\vspace{-0.05in}
-subtractWe previously identified an end-to-end latency target of 3-5us for \dis that we argued could be met with RDMA. The (promising) RDMA latencies in \S\ref{sec:existing} are as reported by native RDMA-based applications. 
+
+We previously identified an end-to-end latency target of 3-5us for \dis that we argued could be met with RDMA. The (promising) RDMA latencies in \S\ref{sec:existing} are as reported by native RDMA-based applications. 
 We were curious about the feasibility of realizing these latencies if we were to retain our architecture from the previous section in which remote memory is accessed as a special swap device as this would provide a simple and transparent approach to utilizing remote memory. 
 
 We thus built a kernel space RDMA block device driver which serves as a swap device; \ie, the local CPU can now swap to remote memory instead of disk.
-We implemented the block device driver on a machine with Mellanox 4xFDR Infiniband card providing 54 Gbps bandwidth.
+We implemented the block device driver on a machine with \revision{a 3 GHz CPU} and a Mellanox 4xFDR Infiniband card providing 54 Gbps bandwidth.
 We test the block device throughput using \texttt{dd} with direct IO, and measure the request latency by instrumenting the driver code. 
 The end-to-end latency of our approach includes the RDMA request latency and the latency introduced by the kernel swap itself. We focus on each in turn. 
 
@@ -57,7 +57,7 @@ We found that convenient measurement tools such as \texttt{ftrace} and \texttt{p
 Thus, we wrap both the body of the \texttt{\_\_do\_page\_fault} function and the call to the \texttt{swapin\_readahead} function (which performs a swap from disk) in \texttt{ktime\_get} calls.  
 We then pack the result of the measurement for the \texttt{swapin\_readahead} function into the unused upper 16-bits of the return value of its caller, \texttt{do\_swap\_page}, which propagates the value up to \texttt{\_\_do\_page\_fault}. 
 
-Once we have measured the body of \texttt{\_\_do\_page\_fault}, we record both the latency of the whole \texttt{\_\_do\_page\_fault} routine ($25.47 \mu$s), as well as the time spent in \texttt{swapin\_readahead} ($23.01 \mu$s). 
+With the body of \texttt{\_\_do\_page\_fault} measured, we record both the latency of the whole \texttt{\_\_do\_page\_fault} routine ($25.47 \mu$s), as well as the time spent in \texttt{swapin\_readahead} ($23.01 \mu$s). 
 We subtract these and average to find that the software overhead of swapping is $2.46 \mu$s. 
 This number is a lower-bound on the software overhead of the handler, because we assume that all of \texttt{swapin\_readahead} is a ``disk access''.% (we cannot neatly instrument inside \texttt{swapin\_readahead} in the same manner since it returns a pointer).
 
@@ -80,26 +80,27 @@ This improves the throughput of swapping out memory pages.
 In the longer term, one might expect to re-architect applications to actively exploit disaggregation for improved performance.
 One promising direction is for applications to exploit the availability of low-latency access to large pools of remote memory~\cite{ddcHwDesign1}. 
 One approach to doing so is based on extending the line of argument in the COST work~\cite{cost} by using remote memory to avoid parallelization overheads.
+\revision{COST is a single machine graph engine that outperforms distributed graph engine like GraphX when the graph fits into main memory. The RDMA swap device enables COST to use ``infinite'' remote memory when the graph is too large.}
 % cite hotnets, reiss??
-We estimate the potential benefits of this approach, with the following experiment .
+We estimate the potential benefits of this approach with the following experiment.
 %to show that applications adapted to disaggregated environment can outperform traditional server centric ones.
 First, to model an application running in a \dis, we set up a virtual machine with 4 cores,  2GB of local memory, and access to an ``infinitely'' large remote memory pool by swapping to an RDMA-backed block device. 
 %This is considered as a simulation to running apps in \dis.
 Next, we consider two scenarios that represent server-centric architecture.
 One is a server with 4 cores and 8GB of local memory (25\% larger than the \dis case as in previous sections) and an ``infinitely'' large local SSD swap -- this represents the COST baseline in a server-centric context. 
-Second, we evaluate GraphX using a 16-node m2.4x large cluster on EC2 -- this represents the scale-out approach in current server-centric architecture.
+Second, we evaluate GraphX using a 16-node \texttt{m2.4xlarge} cluster on EC2 -- this represents the scale-out approach in current server-centric architecture.
 We run Pagerank and Connected Components using COST, a single-thread graph compute engine over three large graph datasets. COST \texttt{mmaps} the input file, so we store the input files on another RDMA-backed block device.
 Figure \ref{fig:benefit} shows the application runtime of COST-DDC, COST-SSD and GraphX-Server Centric.
 In all but one case, COST-DDC is 1.48 to 2.05 times faster than the GraphX (server-centric) scenario and slightly better than the server-centric COST scenario (the improvement over the latter grows with increasing data set size). Performance is worse for Pagerank on the UK-2007-5 dataset, consistent with the results in ~\cite{cost} because the graph in this case is more easily partitioned. 
 
 
 
-Finally, another promising direction for improving performance is through better resource utilization. As argued in~\cite{hotnets, ddcHwDesign1}, CPU-to-memory utilization for tasks in today’s datacenters varies by three orders of magnitude across tasks; by `bin packing' on a much larger scale, \dis should achieve more efficient statistical multiplexing, and hence higher resource utilization and improved job completion times. We leave an exploration of this direction to future work. 
+Finally, another promising direction for improving performance is through better resource utilization. As argued in~\cite{hotnets, ddcHwDesign1}, CPU-to-memory utilization for tasks in today’s datacenters varies by three orders of magnitude across tasks; by ``bin packing'' on a much larger scale, \dis should achieve more efficient statistical multiplexing, and hence higher resource utilization and improved job completion times. We leave an exploration of this direction to future work. 
 
 
 \begin{figure}
   \centering
     \includegraphics[width = \columnwidth]{img/benefit_uk.eps} 
-  \caption{\small{Running COST in a simulated DDC. COST-DDC is 1.48 to 2.05 faster than GraphX-Server Centric except for one case. We use two datasets in our evaluation, UK-2007-05 (105m nodes, 3.7b edges), and Friendster (65m nodes, 1.8b edges)}}
+  \caption{\small{Running COST in a simulated DDC. COST-DDC is 1.48 to 2.05 faster than GraphX-Server Centric except for one case. We use UK-2007-05 (105m nodes, 3.7b edges), and Friendster (65m nodes, 1.8b edges) datasets in the evaluation.}}
   \label{fig:benefit}
 \end{figure}

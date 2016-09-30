@@ -23,12 +23,12 @@
 \end{table}
 
 Figure~\ref{fig:dc} illustrates the high-level idea behind a disaggregated datacenter.
-A \dis comprises of standalone hardware ``blades'' for each resource type,  interconnected by a network fabric.
+A \dis comprises standalone hardware ``blades'' for each resource type,  interconnected by a network fabric.
 Multiple prototypes of disaggregated hardware already exist --- Intel RSA~\cite{rsa}, HP ``the machine''~\cite{hptm}, Facebook's disaggregated rack~\cite{fdr}, Huawei's DC3.0~\cite{huawei}, and SeaMicro~\cite{seamicro}, as well as research prototypes like Firebox~\cite{firebox}, soNUMA~\cite{sonuma}, and memory blades~\cite{ddcHwDesign1}. 
-Many of these systems are proprietary and/or in the early stages of development; nonetheless, in our study we draw from what information is publicly available to both borrow from and critically explore the design choices made by existing hardware prototypes.
+Many of these systems are proprietary and/or in the early stages of development; nonetheless, in our study we draw from what information is publicly available to both borrow from and critically explore the design choices made by existing prototypes.
 
 In this section, we present our assumptions regarding the hardware (\S\ref{ssec:hardware}) and system (\S\ref{ssec:system}) architecture in a disaggregated datacenter.
-We close the section by summarizing the key open design choices that remain after our assumptions (\S\ref{ssec:knobs}); we treat these as design `knobs' in our evaluation.
+We close the section by summarizing the key open design choices that remain after our assumptions (\S\ref{ssec:knobs}); we treat these as design ``knobs'' in our evaluation.
 
 %\vspace{-0.1in}
 \subsection{Assumptions: Hardware Architecture}
@@ -40,11 +40,13 @@ In general, disaggregation suggests that each blade contains one particular reso
 One exception to this strict decoupling are CPU blades: each CPU blade retains some amount of \emph{local} memory that acts as a cache for remote memory dedicated for cores on that blade\footnote{We use ``remote memory'' to refer to the memory located on a standalone memory blade.}.
 Thus, CPU-memory disaggregation can be viewed as expanding the memory hierarchy to include a remote level, which all CPU blades share. 
 
-This architectural choice is reported in prior work~\cite{firebox, ddcHwDesign1, ddcHwDesign2, firebox, huawei}. 
+This architectural choice is reported in prior work~\cite{firebox, ddcHwDesign1, ddcHwDesign2, huawei}. 
 While we assume that partial CPU-memory disaggregation will be the norm, we go a step further and evaluate how the amount of local memory impacts \emph{network} requirements in terms of network bandwidth and latency, and transport-layer flow completion times.
+
 	
 \paragraphb{(2) Cache coherence domain is limited to a single compute blade} As articulated by others~\cite{firebox,hptm,huawei}, this has the important implication that CPU-to-CPU cache coherence traffic does not hit the network fabric.
 This assumption is necessary because an external network fabric is unlikely to support the latency and bandwidth requirements for inter-CPU cache coherence (Table~\ref{tab:tech}).
+
 
 \paragraphb{(3) Resource Virtualization}
 Each resource blade must support virtualization of its resources; this is necessary for resources to be logically aggregated into higher-level abstractions such as VMs or containers.
@@ -58,22 +60,22 @@ The disaggregated memory blade prototyped by Lim \etal~\cite{ddcHwDesign1} inclu
 \begin{table*}[t]
   \centering
   \small
-  \begin{tabular}{c|c|c|c}
-		\textbf{Application Domain} & \textbf{Application} & \textbf{System} & \textbf{Dataset} \\\hline \hline
+  \begin{tabular}{c|c|c|c|c}
+		\textbf{Class} & \textbf{Application Domain} & \textbf{Application} & \textbf{System} & \textbf{Dataset} \\\hline \hline
 		
-    Off-disk Batch & WordCount & Hadoop & Wikipedia edit history~\cite{wikipedia}\\
-     Off-disk Batch & Sort & Hadoop & Sort benchmark generator\\
-     Graph Processing & Collaborative Filtering & GraphLab & Netflix movie rating data~\cite{netflix}\\
-    Point Queries & Key-value store & Memcached & YCSB\\
-    Streaming Queries & Stream WordCount & Spark Streaming & Wikipedia edit history~\cite{wikipedia}\\
+     &Off-disk Batch & WordCount & Hadoop & Wikipedia edit history~\cite{wikipedia}\\
+     & Off-disk Batch & Sort & Hadoop & Sort benchmark generator\\
+    \dolphin & Graph Processing & Collaborative Filtering & GraphLab & Netflix movie rating data~\cite{netflix}\\
+     & Point Queries & Key-value store & Memcached & YCSB\\
+     & Streaming Queries & Stream WordCount & Spark Streaming & Wikipedia edit history~\cite{wikipedia}\\
     \hline
      \hline
      
-    In-memory Batch & WordCount & Spark & Wikipedia edit history~\cite{wikipedia}\\
-     In-memory Batch & Sort & Spark & Sort benchmark generator\\
-     Parallel Dataflow & Pagerank & Timely Dataflow & Friendster Social Network~\cite{friendster}\\
-     In-memory Batch & SQL & Spark SQL & Big Data Benchmark~\cite{bdb}\\
-     Point Queries & Key-value store & HERD & YCSB\\\hline
+     & In-memory Batch & WordCount & Spark & Wikipedia edit history~\cite{wikipedia}\\
+     & In-memory Batch & Sort & Spark & Sort benchmark generator\\
+    \shark & Parallel Dataflow & Pagerank & Timely Dataflow & Friendster Social Network~\cite{friendster}\\
+     & In-memory Batch & SQL & Spark SQL & Big Data Benchmark~\cite{bdb}\\
+     & Point Queries & Key-value store & HERD & YCSB\\\hline
 
     \hline
   \end{tabular}
@@ -86,8 +88,8 @@ The disaggregated memory blade prototyped by Lim \etal~\cite{ddcHwDesign1} inclu
 \paragraphb{(5) Network designs} 
 Corresponding to their assumed scope of disaggregation, existing prototypes assume a different network architecture for within the rack(s) that form a unit of disaggregation vs. between such racks. To our knowledge, all existing \dis prototypes use specialized -- even proprietary~\cite{seamicro,huawei,rsa} -- network technologies and protocols within a disaggregated rack(s). For example, SeaMicro uses a proprietary Torus-based topology and routing protocol within its disaggregated system; Huawei propose a PCIe-based fabric~\cite{huawei1}; Firebox assumes an intra-Firebox network of 1Tbps Silicon photonic links interconnected by high-radix switches~\cite{firebox,vladimir}; and Intel's RSA likewise explores the use of Silicon photonic links and switches. 
 
-Rather than simply accepting the last two design choices (rack-scale disaggregation and specialized network designs), we critically explore when and why these choices are necessary. Our rationale in this is twofold. 
-First, these are both choices that appear to be motivated not by fundamental constraints around disaggregating memory or CPU at the hardware level, but rather by the assumption that existing networking solutions cannot meet the (bandwidth/latency) requirements that disaggregation imposes on the network. To our knowledge, however, there has been no systematic evaluation showing this to be the case; hence, we seek to develop quantifiable arguments that either confirm or refute the need for these choices. 
+Rather than simply accepting the last two design choices (rack-scale disaggregation and specialized network designs), we critically explore when and why these choices are necessary. Our rationale is twofold. 
+First, these are both choices that appear to be motivated not by fundamental constraints around disaggregating memory or CPU at the hardware level, but rather by the assumption that existing networking solutions cannot meet the (bandwidth/latency) requirements that disaggregation imposes on the network. To our knowledge, however, there has been no \revision{published} evaluation showing this to be the case; hence, we seek to develop quantifiable arguments that either confirm or refute these choices. 
 
 Second, these choices are likely to complicate or delay the deployment of \dis. The use of a different network architecture within vs. between disaggregated islands leads to the complexity of a two-tier heterogeneous network architecture with different protocols, configuration APIs, etc., for each; e.g., in the context of their Firebox system, the authors envisage the use of special gateway devices that translate between their custom intra-Firebox protocols and TCP/IP that is used between Firebox systems; Huawei's DC3.0 makes similar assumptions. Likewise, many of the specialized technologies these systems use (e.g., Si-photonic~\cite{vladimir-nature}) are still far from mainstream. 
 Hence, once again, rather than assume change is necessary, we evaluate the possibility of maintaining a uniform ``flat'' network architecture based on existing commodity components as advocated in prior work~\cite{el-fares,vl2,greenberg-costs}. 
@@ -109,11 +111,13 @@ For convenience, in this paper we assume that computational resources are still 
 
 \paragraphb{Hardware organization} 
 We assume that resources are organized in racks as in today's datacenters. 
-We assume a `mixed' organization in which each rack hosts a mix of different types of resource blades, as opposed to a `segregated' organization in which a rack is populated with a single type of resource (e.g., all memory blades). 
+We assume a ``mixed'' organization in which each rack hosts a mix of different types of resource blades, as opposed to a ``segregated'' organization in which a rack is populated with a single type of resource (e.g., all memory blades). 
 This leads to a more uniform communication pattern which should simplify network design and also permits optimizations that aim to localize communication; e.g., co-locating a VM within a rack, which would not be possible with a segregated organization. 
 
 \paragraphb{Page-level remote memory access} 
-In traditional servers, the typical memory access between CPU and DRAM occurs in the unit of a cache-line size (64B in x86). In contrast, we assume that CPU blades access remote memory at the granularity of a page (4KB in x86), since page-level access has been shown to better exploit spatial locality in common memory access patterns~\cite{ddcHwDesign1}. Moreover, this requires little or no modification to the virtual memory subsystems of hypervisors or operating systems, and is completely transparent to user-level applications. 
+In traditional servers, the typical memory access between CPU and DRAM occurs in the unit of a cache-line size (64B in x86). In contrast, we assume that CPU blades access remote memory at the granularity of a page (4KB in x86), since page-level access has been shown to better exploit spatial locality in common memory access patterns~\cite{ddcHwDesign1}. Moreover, this requires little or no modification to the virtual memory subsystems of hypervisors or OSes, and is completely transparent to user-level applications. 
+
+
 % the following is not true, page-level access is more efficient
 \cut{
 Note that this assumption constitutes a bad-case scenario for our study since it significantly increases the amount of data read per memory access (and hence, latency for transferring this larger amount of data across the network) as well as the total traffic volume.
@@ -128,6 +132,6 @@ We assume that applications in \dis read and write large files at the granularit
 \subsection{Design knobs}
 \label{ssec:knobs}
 %\vspace{-0.05in}
-Given the above assumptions, we are left with two key system design choices that we treat as ``knobs'' in our study: {\em the amount of local memory on compute blades} and  {\em the scope of disaggregation} (e.g., rack- or datacenter-scale). We will explore how varying these knobs impacts the network requirements and traffic characteristics in \dis. 
+Given the above assumptions, we are left with two key system design choices that we treat as ``knobs'' in our study: {\em the amount of local memory on compute blades} and  {\em the scope of disaggregation} (e.g., rack- or datacenter-scale). We will explore how these knobs impacts the network requirements and traffic characteristics in \dis. 
 
 The remainder of this paper is organized as follows. We first analyze network-layer bandwidth and latency requirements in \dis(\S\ref{sec:requirements}) \emph{without} considering contention between network flows, then in \S\ref{sec:existing} relax this constraint. We end with a discussion of the future directions in \S\ref{sec:future}.

@@ -4,7 +4,7 @@
 %
 \label{sec:existing}
 %\vspace{-0.05in}
-Our evaluation so far ignored the impact of queuing delay on end-to-end latency and hence application performance; we remedy the omission in this section.
+Our evaluation has so far ignored the impact of queuing delay on end-to-end latency and hence application performance; we remedy the omission in this section.
 The challenge is that queuing delay is a function of the overall network design, including: the traffic workload, network topology and routing, and the end-to-end transport protocol. Our evaluation focuses on existing proposals for transport protocols, with standard assumptions about the datacenter topology and routing. However, the input traffic workload in \dis will be very different from that in a server-centric datacenter and, to our knowledge, no models exist that characterize traffic in a \dis. 
 
 We thus start by devising a methodology that extends our experimental setup to generate an application-driven input traffic workload (\S\ref{ssec:ssmethod-traffic}), then describe how we use this traffic model to evaluate the impact of queuing delay (\S\ref{ssec:ssmethod}). Finally, we present our results on: (i) how existing transport designs perform under \dis traffic workloads (\S\ref{ssec:nlp}), and (ii) how existing transport designs impact end-to-end application performance (\S\ref{ssec:alp}). To our knowledge, our results represent the first evaluation of transport protocols for \dis. 
@@ -49,15 +49,15 @@ SR:OSDI-CUT
 \subsection{Methodology: \dis Traffic Workloads}
 \label{ssec:ssmethod-traffic}
 %\vspace{-0.05in}
-Using our experimental setup from \S\ref{ssec:rmethod}, we collect a remote memory access trace from our instrumentation tool as described in \S\ref{ssec:rmethod}, a network access trace using {\tt tcpdump}~\cite{tcpdump}, and a disk access trace using the {\tt blktrace} utility.
+Using our experimental setup from \S\ref{ssec:rmethod}, we collect a remote memory access trace from our instrumentation tool as described in \S\ref{ssec:rmethod}, a network access trace using {\tt tcpdump}~\cite{tcpdump}, and a disk access trace using {\tt blktrace}.
 
 We translate the accesses from the above traces to network flows 
-in our simulated disaggregated cluster by splitting each node into one compute, one memory, and one disk blade and assigning memory blades to virtual nodes.
+in our simulated disaggregated cluster by splitting a node into one compute, one memory, and one disk blade and assigning memory blades to virtual nodes.
 
 All memory and disk accesses captured above are associated with a specific address in the corresponding CPU's global virtual address space. We assume this address space is uniformly partitioned across all memory and disk blades reflecting our assumption of distributed data placement (\S\ref{ssec:system}).  
 
 One subtlety remains. Consider the disk accesses at a server $A$ in the original cluster: one might view all these disk accesses as corresponding to a flow between the compute  and disk blades corresponding to $A$, but in reality $A$'s CPU may have issued some of these disk accesses in response to a request from a remote server $B$ (\eg, due to a shuffle request). 
-In the disaggregated cluster, this access should be treated as a network flow between \emph{$B$}'s compute blade and $A$'s disk blade %SR:OSDI-CUT (i.e., the compute blade obtained by disaggregating server B and the disk blade that corresponds to disaggregating A).
+In the disaggregated cluster, this access should be treated as a network flow between \emph{$B$}'s compute blade and $A$'s disk blade. %SR:OSDI-CUT (i.e., the compute blade obtained by disaggregating server B and the disk blade that corresponds to disaggregating A).
 
 To correctly attribute accesses to the CPU that originates the request, we match network and disk traces across the cluster -- e.g., matching the network traffic between $B$ and $A$ to the disk traffic at $A$ -- using a heuristic based on both the timestamps and volume of data transferred. 
 If a locally captured memory or disk access request matches a local flow in our {\tt tcpdump} traces, then it is assumed to be part of a remote read and is attributed to the remote endpoint of the network flow.
@@ -78,16 +78,40 @@ We evaluate the use of existing network designs for \dis in two steps.
 First, we evaluate how existing network designs fare under \dis traffic workloads. 
 For this, we consider a suite of state-of-the-art network designs and use simulation to evaluate their network-layer performance -- measured in terms of flow completion time (FCT) -- under the traffic workloads we generate as above.
 We then return to actual execution of our applications (Table~\ref{tab:workloads}) and once again emulate disaggregation by injecting latencies for page misses. 
-However, now we inject the flow completion times obtained from our best-performing network design (as opposed to the constant latencies from \S\ref{sec:requirements}). This last step effectively `closes the loop', allowing us to evaluate the impact of disaggregation on application-level performance for realistic network designs and conditions. 
+However, now we inject the flow completion times obtained from our best-performing network design (as opposed to the constant latencies from \S\ref{sec:requirements}). This last step effectively ``closes the loop'', allowing us to evaluate the impact of disaggregation on application-level performance for realistic network designs and conditions. 
 
 \paragraphb{Simulation Setup}
+\revision{
 We use the same simulation setup as prior work on datacenter transports~\cite{pfabric, phost,dctcp}. 
 We simulate a %$144$-node (9 racks of 16 servers each) 
-topology with 9 racks and a full bisection bandwidth Clos topology with $36$KB buffers per port; our two changes from prior work are to use $40$Gbps or $100$Gbps access links (as per ~\S\ref{sec:requirements}), and setting propagation and switching delays as discussed in \S\ref{ssec:rtt} (Table~\ref{tab:latency}).
-%: 20 ns within a rack, 200ns for aggregation links, and a switching delay of 200ns per hop. 
-We evaluate five protocols; in each case, we set protocol-specific parameters following the default settings but adapted to our bandwidth-delay product as recommended. Two protocols, TCP and DCTCP~\cite{dctcp}, see wide adoption today; the remaining three --- pFabric~\cite{pfabric}, pHost~\cite{phost}, and Fastpass~\cite{fastpass} --- are recent research proposals.
+topology with 9 racks (with 144 total endpoints) and a full bisection bandwidth Clos topology with $36$KB buffers per port; our two changes from prior work are to use $40$Gbps or $100$Gbps access links (as per ~\S\ref{sec:requirements}), and setting propagation and switching delays as discussed in \S\ref{ssec:rtt} (Table~\ref{tab:latency} with RDMA and NIC integration).
+We map the 5 EC2-node cluster into a disaggregated cluster with 15 blades: 5 each of compute, memory and disk.
+Then, we extract the flow size and inter-arrival time distribution for each endpoint pair in the 15 blades disaggregated cluster, and generate traffic using the distributions. 
+Finally, we embed the multiple disaggregated clusters into the 144-endpoint datacenter with both rack-scale and datacenter-scale disaggreagtion, where communicating nodes are constrained to be within a rack and unconstrained, respectively.
 
-We evaluate both rack-scale and datacenter-scale traffic generation, where communicating nodes are constrained to be within a rack and unconstrained, respectively.
+
+%: 20 ns within a rack, 200ns for aggregation links, and a switching delay of 200ns per hop. 
+We evaluate five protocols; in each case, we set protocol-specific parameters following the default settings but adapted to our bandwidth-delay product as recommended. 
+\cut{Two protocols, TCP and DCTCP~\cite{dctcp}, see wide adoption today; the remaining three --- pFabric~\cite{pfabric}, pHost~\cite{phost}, and Fastpass~\cite{fastpass} --- are recent research proposals.
+}
+
+\begin{enumerate}[leftmargin=*]
+\itemsep0em
+\item {\bf TCP}, with an initial congestion window of 2.
+\item {\bf DCTCP}, which leverages ECN for enhanced performance in datacenter contexts.  
+\item {\bf pFabric}, approximates shortest-job-first scheduling in a network context using switch support to prioritize  flows with a smaller remaining flow size~\cite{pfabric}. We set pFabric to have an initial congestion window of 12 packets and a retransmission timeout of $45$us.
+%
+\item {\bf pHost}, emulates pFabric's behavior but using only scheduling at the end hosts~\cite{phost} and hence allows the use of commodity switches. We set pHost to have a free token limit of 8 packets and a retransmission timeout of $9.5$us as recommended in ~\cite{phost}.
+%; we obtained these parameters from pHost's implementation.
+%
+\item {\bf Fastpass}, introduces a centralized scheduler that schedules every packet. We implement Fastpass's scheduling algorithm in our simulator as described in ~\cite{phost} and optimistically assume that the scheduler's decision logic itself incurs no overhead (i.e., takes zero time) and hence we only consider the latency and bandwidth overhead of contacting the central scheduler. 
+%The implementation of this centralized arbiter is discussed in detail in previous work~\cite{phost}. 
+We set the Fastpass epoch size to be 8 packets.%, obtained from the Fastpass paper.
+%
+\end{enumerate}
+
+}
+
 
 %\vspace{-0.1in}
 \subsection{Network-level performance}

@@ -1,8 +1,8 @@
 
-\vspace{-0.1in}
+
 \section{Related Work and Discussion}
 \label{sec:discussion}
-\vspace{-0.05in}
+
 
 As mentioned earlier, there are many recent and ongoing efforts to prototype disaggregated hardware. We discussed the salient features of these efforts inline throughout this paper and hence we only briefly elaborate on them here. 
 
@@ -19,7 +19,17 @@ None of these efforts evaluate network requirements based on existing workloads 
 In an early position paper, Han \etal~\cite{hotnets} measure -- as we do -- the impact of remote memory access latency on application-level performance within a single machine. Our work extends this understanding to a larger set of workloads and concludes with more stringent requirements on latency and bandwidth than Han \etal do, due to our consideration of shark applications. In addition, we use simulation and emulation to study the impact of queueing delay and transport designs which further raises the bar on our target network performance.
 
 Multiple recent efforts~\cite{farm,mica,herd,ramcloud} aim to reduce the latency in networked applications through techniques that bypass the kernel networking stack, and so forth. 
-
 Similarly, efforts toward NIC integration by CPU architects~\cite{cpu-nic} promise to enable even further latency-saving optimizations. As we note in \S\ref{ssec:rtt}, such efforts are crucial enablers in meeting our latency targets. 
 
 
+\revisionb{
+Distributed Shared Memory (DSM)~\cite{ivy,munin,grappa} systems create a shared address space and allow remote memory to be accessed among different endpoints.
+While this is a simple programming abstraction, DSM incurs high synchronization overhead.
+Our work simplifies the design by using remote memory only for paging, which removes synchronization between the endpoints.
+}
+
+\revision{
+Based on our knowledge on existing designs and prototypes~\cite{firebox,hptm,huawei,ddcHwDesign1,ddcHwDesign2}, we assume partial memory disaggregation and limit the cache coherence domain to one CPU.
+However, future designs may relax these assumptions, causing more remote memory access traffic and cache coherence traffic.
+In these designs, specialized network hardware may become necessary.
+}

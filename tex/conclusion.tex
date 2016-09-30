@@ -1,11 +1,15 @@
 
 
 \section{Conclusion}
+This paper is a preliminary study; we have identified numerous directions for future work before disaggregation is deployable. Most important among these are the adoption of low-latency network software and hardware at endpoints, the design and implementation of a ``disaggregation-aware'' scheduler, and the creation of new programming models which exploit a disaggregated architecture.
+We believe that quantified, workload-driven studies such as that presented in this paper can serve to inform these ongoing and future efforts to build \dis systems.
+\cut{
 In this paper, we take a first step towards understanding application performance in future disaggregated datacenters. Using a workload-driven approach, we find that an end-to-end network latency of 3-5 $\mu$s and link bandwidth of $100$Gbps will result in only minor degradations in application performance.
 \cut{
 Taken together, we are cautiously optimistic about the ability to meet the needs of \dis with existing network designs and components but also identify several avenues for future improvements and research. 
 }
-We believe that quantified, workload-driven studies such as that presented in this paper can serve to inform ongoing and future efforts to build \dis systems. 
+We believe that quantified, workload-driven studies such as that presented in this paper can serve to inform ongoing and future efforts to build \dis systems.
+}
 
 \cut{ 
 
@@ -15,3 +19,6 @@ requirements from the network to avoid degrading application-level performance? 
 
 We find that a network with end-to-end latency for $5$--$10\mu$s and $40$Gbps access link capacity may be sufficient to ensure little or no degradation in application-level performance. Many of the tenets that have guided datacenter design so far may not hold in the context of disaggregated datacenters. Finally, we find that state-of-the-art protocols may be adequate for disaggregation.
 }
+
+\section*{Acknowledgements}
+We thank our shepherd Orran Krieger and the anonymous reviewers for their excellent feedback. We thank Kostadin Ilov for his technical support on our experiments. This work is supported by Intel.
